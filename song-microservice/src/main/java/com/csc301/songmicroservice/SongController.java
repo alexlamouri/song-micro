@@ -1,5 +1,6 @@
 package com.csc301.songmicroservice;
 
+import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -40,13 +42,10 @@ public class SongController {
 	@RequestMapping(value = "/getSongById/{songId}", method = RequestMethod.GET)
 	public @ResponseBody Map<String, Object> getSongById(@PathVariable("songId") String songId,
 			HttpServletRequest request) {
-
+	
 		Map<String, Object> response = new HashMap<String, Object>();
-		response.put("path", String.format("GET %s", Utils.getUrl(request)));
-
-		DbQueryStatus dbQueryStatus = songDal.findSongById(songId);
-
-		response.put("message", dbQueryStatus.getMessage());
+	
+		DbQueryStatus dbQueryStatus = this.songDal.findSongById(songId);
 		response = Utils.setResponseStatus(response, dbQueryStatus.getdbQueryExecResult(), dbQueryStatus.getData());
 
 		return response;
@@ -58,9 +57,10 @@ public class SongController {
 			HttpServletRequest request) {
 
 		Map<String, Object> response = new HashMap<String, Object>();
-		response.put("path", String.format("GET %s", Utils.getUrl(request)));
+		DbQueryStatus dbQueryStatus = this.songDal.getSongTitleById(songId);
+		response = Utils.setResponseStatus(response, dbQueryStatus.getdbQueryExecResult(), dbQueryStatus.getData());
 
-		return null;
+		return response;
 	}
 
 	
@@ -69,9 +69,10 @@ public class SongController {
 			HttpServletRequest request) {
 
 		Map<String, Object> response = new HashMap<String, Object>();
-		response.put("path", String.format("DELETE %s", Utils.getUrl(request)));
-
-		return null;
+		DbQueryStatus dbQueryStatus = this.songDal.deleteSongById(songId);
+		response = Utils.setResponseStatus(response, dbQueryStatus.getdbQueryExecResult(), dbQueryStatus.getData());
+		//Add profile part 
+		return response;
 	}
 
 	
@@ -80,9 +81,22 @@ public class SongController {
 			HttpServletRequest request) {
 
 		Map<String, Object> response = new HashMap<String, Object>();
-		response.put("path", String.format("POST %s", Utils.getUrl(request)));
+		
+		if (!(params.containsKey("songName") && params.containsKey("songArtistFullName") && params.containsKey("songAlbum"))){
+			DbQueryStatus dbQueryStatus = new DbQueryStatus("Missing Parameters", DbQueryExecResult.QUERY_ERROR_GENERIC);
+			response = Utils.setResponseStatus(response, dbQueryStatus.getdbQueryExecResult(), dbQueryStatus.getData());
+			return response;
+		}
+		
+		String newSongName = params.get("songName");
+		String newSongArtist = params.get("songArtistFullName");
+		String newSongAlbum = params.get("songAlbum");
+		Song newSong = new Song(newSongName, newSongArtist, newSongAlbum);
+		DbQueryStatus dbQueryStatus = this.songDal.addSong(newSong);
+		dbQueryStatus.setData(newSong);
+		response = Utils.setResponseStatus(response, dbQueryStatus.getdbQueryExecResult(), dbQueryStatus.getData());
 
-		return null;
+		return response;
 	}
 
 	
@@ -91,8 +105,16 @@ public class SongController {
 			@RequestParam("shouldDecrement") String shouldDecrement, HttpServletRequest request) {
 
 		Map<String, Object> response = new HashMap<String, Object>();
-		response.put("data", String.format("PUT %s", Utils.getUrl(request)));
-
-		return null;
+		if (shouldDecrement.equals("true")) {
+			DbQueryStatus dbQueryStatus = this.songDal.updateSongFavouritesCount(songId, true);
+			response = Utils.setResponseStatus(response, dbQueryStatus.getdbQueryExecResult(), dbQueryStatus.getData());
+		} else if (shouldDecrement.equals("false")) {
+			DbQueryStatus dbQueryStatus = this.songDal.updateSongFavouritesCount(songId, false);
+			response = Utils.setResponseStatus(response, dbQueryStatus.getdbQueryExecResult(), dbQueryStatus.getData());
+		} else { //if shouldDecrement is something other than true or false
+			DbQueryStatus dbQueryStatus = new DbQueryStatus("Wrong Parameters", DbQueryExecResult.QUERY_ERROR_GENERIC);
+			response = Utils.setResponseStatus(response, dbQueryStatus.getdbQueryExecResult(), dbQueryStatus.getData());
+		}
+		return response;
 	}
 }
