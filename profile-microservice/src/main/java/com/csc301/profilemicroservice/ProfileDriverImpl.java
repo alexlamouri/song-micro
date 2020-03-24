@@ -89,6 +89,8 @@ public class ProfileDriverImpl implements ProfileDriver {
 				DbQueryStatus response = new DbQueryStatus("Username does not exist",DbQueryExecResult.QUERY_ERROR_NOT_FOUND);
 				return response;
 			} 
+			
+			//check if friend userName exists
 			String matchFrndUserName = String.format("MATCH (nFriendProfile:profile {userName: \"%s\"}) RETURN nFriendProfile", frndUserName); //Matching for user name
 			StatementResult resultFrndUserName = session.run(matchUserName);
 			if (!(resultFrndUserName.hasNext())) { //user name already exists
@@ -111,7 +113,33 @@ public class ProfileDriverImpl implements ProfileDriver {
 	@Override
 	public DbQueryStatus unfollowFriend(String userName, String frndUserName) {
 		
-		return null;
+		try (Session session = driver.session()){
+			//check if userName exists 
+			String matchUserName = String.format("MATCH (nProfile:profile {userName: \"%s\"}) RETURN nProfile", userName); 
+			StatementResult resultUserName = session.run(matchUserName);
+			if (!(resultUserName.hasNext())) { 
+				DbQueryStatus response = new DbQueryStatus("Username does not exist",DbQueryExecResult.QUERY_ERROR_NOT_FOUND);
+				return response;
+			} 
+			
+			//check if friend userName exists
+			String matchFrndUserName = String.format("MATCH (nFriendProfile:profile {userName: \"%s\"}) RETURN nFriendProfile", frndUserName); //Matching for user name
+			StatementResult resultFrndUserName = session.run(matchUserName);
+			if (!(resultFrndUserName.hasNext())) { //user name already exists
+				DbQueryStatus response = new DbQueryStatus("Friend Username does not exist",DbQueryExecResult.QUERY_ERROR_NOT_FOUND);
+				return response;
+			} 
+			else {
+				try (Transaction tx = session.beginTransaction()){
+					String unfollow = String.format("MATCH (nProfile:profile {userName: \"%s\"})-[f:follows]->(nFriendProfile:profile {userName: \"%s\"}) DELETE f",userName,frndUserName);
+					tx.run(unfollow);
+					tx.success();
+					
+					DbQueryStatus response = new DbQueryStatus("Ok",DbQueryExecResult.QUERY_OK);
+					return response;
+				}
+			}
+		}
 	}
 
 	@Override
