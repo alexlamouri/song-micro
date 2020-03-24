@@ -49,11 +49,19 @@ public class ProfileController {
 	@RequestMapping(value = "/profile", method = RequestMethod.POST)
 	public @ResponseBody Map<String, Object> addProfile(@RequestParam Map<String, String> params,
 			HttpServletRequest request) {
-
 		Map<String, Object> response = new HashMap<String, Object>();
 		response.put("path", String.format("POST %s", Utils.getUrl(request)));
-
-		return null;
+		if (!(params.containsKey("userName") && params.containsKey("fullName") && params.containsKey("password"))){
+			DbQueryStatus dbQueryStatus = new DbQueryStatus("Missing Parameters", DbQueryExecResult.QUERY_ERROR_GENERIC);
+			response = Utils.setResponseStatus(response, dbQueryStatus.getdbQueryExecResult(), dbQueryStatus.getData());
+			return response;
+		}
+		String newUserName = params.get("userName");
+		String newFullName = params.get("fullName");
+		String newPasswd = params.get("password");
+		DbQueryStatus dbQueryStatus = this.profileDriver.createUserProfile(newUserName, newFullName, newPasswd);
+		response = Utils.setResponseStatus(response, dbQueryStatus.getdbQueryExecResult(), dbQueryStatus.getData());
+		return response;
 	}
 
 	@RequestMapping(value = "/followFriend/{userName}/{friendUserName}", method = RequestMethod.PUT)
@@ -62,8 +70,9 @@ public class ProfileController {
 
 		Map<String, Object> response = new HashMap<String, Object>();
 		response.put("path", String.format("PUT %s", Utils.getUrl(request)));
-		
-		return null;
+		DbQueryStatus dbQueryStatus = this.profileDriver.followFriend(userName, friendUserName);
+		response = Utils.setResponseStatus(response, dbQueryStatus.getdbQueryExecResult(), dbQueryStatus.getData());
+		return response;
 	}
 
 	@RequestMapping(value = "/getAllFriendFavouriteSongTitles/{userName}", method = RequestMethod.GET)
