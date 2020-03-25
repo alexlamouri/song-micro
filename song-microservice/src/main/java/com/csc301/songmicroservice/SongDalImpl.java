@@ -38,12 +38,7 @@ public class SongDalImpl implements SongDal {
 				
 				result = new DbQueryStatus("OK", DbQueryExecResult.QUERY_OK);
 				
-				JSONObject data = new JSONObject();
-				data.put("songName", songToAdd.getSongName());
-				data.put("songArtistFullName", songToAdd.getSongArtistFullName());
-				data.put("songAlbum", songToAdd.getSongAlbum());
-				data.put("songAmountFavourites", songToAdd.getSongAmountFavourites());
-				result.setData(data);
+				result.setData(songToAdd);
 			}
 			
 			else { // if existing song
@@ -73,14 +68,8 @@ public class SongDalImpl implements SongDal {
 				
 				result = new DbQueryStatus("OK", DbQueryExecResult.QUERY_OK);
 				
-				// TODO fix result
-				JSONObject data = new JSONObject();
-				data.put("songName", foundSong.getSongName());
-				data.put("songArtistFullName", foundSong.getSongArtistFullName());
-				data.put("songAlbum", foundSong.getSongAlbum());
-				data.put("songAmountFavourites", foundSong.getSongAmountFavourites());
-				result.setData(data);
-				System.out.println(data);
+				result.setData(foundSong);
+				
 			}
 			
 			else { // if song not found by id
