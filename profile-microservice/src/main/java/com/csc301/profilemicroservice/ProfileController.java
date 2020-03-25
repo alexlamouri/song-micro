@@ -103,8 +103,13 @@ public class ProfileController {
 
 		Map<String, Object> response = new HashMap<String, Object>();
 		response.put("path", String.format("PUT %s", Utils.getUrl(request)));
-
-		return null;
+		
+		//TODO: check if songId exists in Song?
+		DbQueryStatus dbQueryStatus = this.playlistDriver.likeSong(userName, songId);
+		
+		//TODO: Increment Song Favorites Count in song microservice 
+		response = Utils.setResponseStatus(response, dbQueryStatus.getdbQueryExecResult(), dbQueryStatus.getData());
+		return response;
 	}
 
 	@RequestMapping(value = "/unlikeSong/{userName}/{songId}", method = RequestMethod.PUT)
@@ -114,7 +119,12 @@ public class ProfileController {
 		Map<String, Object> response = new HashMap<String, Object>();
 		response.put("path", String.format("PUT %s", Utils.getUrl(request)));
 
-		return null;
+		//TODO: check if songId exists in Song?
+				DbQueryStatus dbQueryStatus = this.playlistDriver.unlikeSong(userName, songId);
+				
+		//TODO: Decrement Song Favorites Count in song microservice 
+		response = Utils.setResponseStatus(response, dbQueryStatus.getdbQueryExecResult(), dbQueryStatus.getData());
+		return response;
 	}
 
 	@RequestMapping(value = "/deleteAllSongsFromDb/{songId}", method = RequestMethod.PUT)
