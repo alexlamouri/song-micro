@@ -13,6 +13,7 @@ import com.csc301.profilemicroservice.Utils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import okhttp3.Call;
+import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
@@ -104,6 +105,32 @@ public class ProfileController {
 		Map<String, Object> response = new HashMap<String, Object>();
 		response.put("path", String.format("PUT %s", Utils.getUrl(request)));
 		
+//		String path = String.format("PUT http://localhost:3001/updateSongFavouritesCount/%s?shouldDecrement=false", songId);
+//		try {
+//			if (songId != null) {
+//				HttpUrl.Builder urlBuilder = HttpUrl.parse("http://localhost:3001" + "/updateSongFavouritesCount").newBuilder();
+//				urlBuilder.addPathSegment(songId);
+//				urlBuilder.addQueryParameter("shouldDecrement", "false");
+//				String url = urlBuilder.build().toString();
+//				System.out.println(url);
+//				RequestBody body = RequestBody.create(null,new byte[0]);
+//				Request requestSong = new Request.Builder() //making request to some other service 
+//						.url(url)
+//						.method("PUT", body)
+//						.build();
+//				Call call = client.newCall(requestSong);
+//				Response responseFromSongMs = null;
+//			
+//				try {
+//					responseFromSongMs = call.execute();
+//					System.out.println(responseFromSongMs);
+//				} catch (IOException e) {
+//					e.printStackTrace();
+//				}
+//			}
+//		} catch (Exception e) {
+//			System.out.println("Couldnt increment song");
+//		}
 		//TODO: check if songId exists in Song?
 		DbQueryStatus dbQueryStatus = this.playlistDriver.likeSong(userName, songId);
 		
@@ -120,7 +147,7 @@ public class ProfileController {
 		response.put("path", String.format("PUT %s", Utils.getUrl(request)));
 
 		//TODO: check if songId exists in Song?
-				DbQueryStatus dbQueryStatus = this.playlistDriver.unlikeSong(userName, songId);
+		DbQueryStatus dbQueryStatus = this.playlistDriver.unlikeSong(userName, songId);
 				
 		//TODO: Decrement Song Favorites Count in song microservice 
 		response = Utils.setResponseStatus(response, dbQueryStatus.getdbQueryExecResult(), dbQueryStatus.getData());
@@ -134,6 +161,9 @@ public class ProfileController {
 		Map<String, Object> response = new HashMap<String, Object>();
 		response.put("path", String.format("PUT %s", Utils.getUrl(request)));
 		
-		return null;
+		DbQueryStatus dbQueryStatus = this.playlistDriver.deleteSongFromDb(songId);
+		
+		response = Utils.setResponseStatus(response, dbQueryStatus.getdbQueryExecResult(), dbQueryStatus.getData());
+		return response;
 	}
 }

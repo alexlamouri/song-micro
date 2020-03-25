@@ -73,7 +73,6 @@ public class PlaylistDriverImpl implements PlaylistDriver {
 			String match = String.format("MATCH r=(nPlaylist:playlist {plName: \"%s-favourites\"})-[:includes]->(nSong:song {songId: \"%s\"}) RETURN r",userName,songId);
 			StatementResult resultFav = session.run(match);
 			if (!(resultFav.hasNext())) {
-				System.out.println("how?");
 				result = new DbQueryStatus("Song not in favourites",DbQueryExecResult.QUERY_ERROR_GENERIC);
 				return result;
 			}
@@ -94,6 +93,13 @@ public class PlaylistDriverImpl implements PlaylistDriver {
 	@Override
 	public DbQueryStatus deleteSongFromDb(String songId) {
 		
-		return null;
+		DbQueryStatus result;
+		try(Transaction tx = driver.session().beginTransaction()){
+			String matchSong = String.format("MATCH (nPlaylist:playlist)-[r:includes]->(nSong:song {songId: \"%s\"}) WHERE nPlaylist.plName =~ '.*-favourites' DELETE r,nSong",songId);
+			tx.run(matchSong);
+			tx.success();
+			result = new DbQueryStatus("Ok",DbQueryExecResult.QUERY_OK);
+			return result;
+		}
 	}
 }
