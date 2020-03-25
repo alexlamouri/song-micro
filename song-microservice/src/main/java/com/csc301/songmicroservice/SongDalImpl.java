@@ -32,16 +32,15 @@ public class SongDalImpl implements SongDal {
 			findSong.addCriteria(Criteria.where("songArtistFullName").is(songToAdd.getSongArtistFullName()));	
 			Song foundSong = this.db.findOne(findSong, Song.class);
 			
-			if (foundSong == null) { // if no existing song
+			if (foundSong == null) { // if no duplicate song
 				
 				this.db.insert(songToAdd);
 				
 				result = new DbQueryStatus("OK", DbQueryExecResult.QUERY_OK);
-				
-				result.setData(songToAdd);
+				result.setData(songToAdd.getJsonRepresentation());
 			}
 			
-			else { // if existing song
+			else { // if duplicate song
 				result = new DbQueryStatus("DuplicateSongError", DbQueryExecResult.QUERY_ERROR_GENERIC);
 			}
 		}
@@ -67,9 +66,7 @@ public class SongDalImpl implements SongDal {
 			if (foundSong != null) { // if song found by id
 				
 				result = new DbQueryStatus("OK", DbQueryExecResult.QUERY_OK);
-				
-				result.setData(foundSong);
-				
+				result.setData(foundSong.getJsonRepresentation());
 			}
 			
 			else { // if song not found by id
@@ -149,7 +146,7 @@ public class SongDalImpl implements SongDal {
 
 	@Override
 	public DbQueryStatus updateSongFavouritesCount(String songId, boolean shouldDecrement) {
-		// TODO Auto-generated method stub
+
 		DbQueryStatus result;
 		
 		try {
