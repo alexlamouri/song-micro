@@ -144,7 +144,19 @@ public class ProfileDriverImpl implements ProfileDriver {
 
 	@Override
 	public DbQueryStatus getAllSongFriendsLike(String userName) {
+		DbQueryStatus result;
+		try (Session session = driver.session()){
+			//check if userName exists 
+			String matchUserName = String.format("MATCH (nProfile:profile {userName: \"%s\"}) RETURN nProfile", userName); 
+			StatementResult resultUserName = session.run(matchUserName);
+			if (!(resultUserName.hasNext())) { 
+				DbQueryStatus response = new DbQueryStatus("Username does not exist",DbQueryExecResult.QUERY_ERROR_NOT_FOUND);
+				return response;
+			} 
 			
+			//TODO: Complete rest of it 
+			
+		}
 		return null;
 	}
 }
