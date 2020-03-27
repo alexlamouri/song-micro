@@ -37,7 +37,7 @@ public class PlaylistDriverImpl implements PlaylistDriver {
 			if (!playlist.hasNext()) { // if user playlist not found
 				
 				tx.failure();
-				result = new DbQueryStatus("Username does not exist", DbQueryExecResult.QUERY_ERROR_NOT_FOUND);
+				result = new DbQueryStatus("User does not exist", DbQueryExecResult.QUERY_ERROR_NOT_FOUND);
 			}
 			
 			else { // if user playlist found
@@ -47,8 +47,22 @@ public class PlaylistDriverImpl implements PlaylistDriver {
 				
 				if (song.hasNext()) { // if song in user playlist
 					
-					tx.failure();
-					result = new DbQueryStatus("Song already in favourites", DbQueryExecResult.QUERY_ERROR_GENERIC);
+					song.next();
+					
+					if (song.hasNext()) { // if song in user playlist twice
+						
+						tx.failure();
+						result = new DbQueryStatus("Song already in user's favourites twice", DbQueryExecResult.QUERY_ERROR_GENERIC);
+					}
+					
+					else { // if song in user playlist once
+						
+						String likeSong = String.format("MATCH (nPlaylist:playlist) WHERE nPlaylist.plName = \"%s-favourites\" CREATE (nPlaylist)-[:includes]->(nSong:song {songId: \"%s\"})", userName, songId);
+						tx.run(likeSong);
+						tx.success();
+						
+						result = new DbQueryStatus("OK", DbQueryExecResult.QUERY_OK);	
+					}	
 				}
 				
 				else { // if song not in user playlist
@@ -57,7 +71,7 @@ public class PlaylistDriverImpl implements PlaylistDriver {
 					tx.run(likeSong);
 					tx.success();
 					
-					result = new DbQueryStatus("OK",DbQueryExecResult.QUERY_OK);	
+					result = new DbQueryStatus("OK", DbQueryExecResult.QUERY_OK);	
 				}	
 			}	
 		}

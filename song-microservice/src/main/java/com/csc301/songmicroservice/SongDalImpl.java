@@ -161,11 +161,18 @@ public class SongDalImpl implements SongDal {
 				
 				// TODO Update to all locations
 				
-				if (shouldDecrement && numFav > 0) {
-					foundSong.setSongAmountFavourites(numFav - 1);
+				if (shouldDecrement) { // if decrementing likes
+					
+					if (numFav > 0) { // if song is liked
+						foundSong.setSongAmountFavourites(numFav - 1);
+					}
+					
+					else { // if song is not liked
+						result = new DbQueryStatus("SongNotLikedError", DbQueryExecResult.QUERY_ERROR_GENERIC);
+					}
 				}
 				
-				else if (!shouldDecrement){
+				else if (!shouldDecrement) { // if incrementing likes
 					foundSong.setSongAmountFavourites(numFav + 1);
 				}
 				
