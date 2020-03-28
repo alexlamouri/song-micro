@@ -1,5 +1,6 @@
 package com.csc301.profilemicroservice;
 
+import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -105,42 +106,69 @@ public class ProfileController {
 
 		Map<String, Object> response = new HashMap<String, Object>();
 		response.put("path", String.format("PUT %s", Utils.getUrl(request)));
+		//String path = String.format("PUT http://localhost:3001/updateSongFavouritesCount/%s?shouldDecrement=false", songId);
+		DbQueryStatus dbQueryStatus = null; 
 		
-		// TODO: check if songId exists in Song?
-		// songDriver.getSongById/songId
-		
-		String path = String.format("PUT http://localhost:3001/updateSongFavouritesCount/%s?shouldDecrement=false", songId);
-//		try {
-//			if (songId != null) {
-//				HttpUrl.Builder urlBuilder = HttpUrl.parse("http://localhost:3001" + "/updateSongFavouritesCount").newBuilder();
-//				urlBuilder.addPathSegment(songId);
-//				urlBuilder.addQueryParameter("shouldDecrement", "false");
-//				String url = urlBuilder.build().toString();
-//				System.out.println(url);
-//				RequestBody body = RequestBody.create(null,new byte[0]);
-//				Request requestSong = new Request.Builder() //making request to some other service 
-//						.url(url)
-//						.method("PUT", body)
-//						.build();
-//				Call call = client.newCall(requestSong);
-//				Response responseFromSongMs = null;
-//			
-//				try {
-//					responseFromSongMs = call.execute();
-//					System.out.println(responseFromSongMs);
-//				} catch (IOException e) {
-//					e.printStackTrace();
-//				}
-//			}
-//		} catch (Exception e) {
-//			System.out.println("Couldnt increment song");
-//		}
-		
-		DbQueryStatus dbQueryStatus = this.playlistDriver.likeSong(userName, songId);
-		
-		// TODO: Increment Song Favorites Count in song microservice 
-		// songDriver.updateSongFavouritesCount/songId?shouldDecrement=false
-		
+		//Check if song exists in MongoDb
+		if (songId != null) {
+			HttpUrl.Builder urlGetSong = HttpUrl.parse("http://localhost:3001" + "/getSongById").newBuilder();
+			urlGetSong.addPathSegment(songId);
+			String urlSong = urlGetSong.build().toString();
+			
+			//RequestBody bodySong = RequestBody.create(null,new byte[0]);
+			Request requestGetSong = new Request.Builder() //making request to some Song service 
+					.url(urlSong)
+					.method("GET", null)
+					.build();
+			Call callGetSong = client.newCall(requestGetSong);
+			Response responseFromGetSong = null;
+			
+			try {
+				responseFromGetSong = callGetSong.execute();
+				JSONObject data = new JSONObject(responseFromGetSong.body().string());
+				String status = data.getString("status");
+				
+				if (!status.equals("OK")){
+					dbQueryStatus = new DbQueryStatus("Song does not exist in MongoDb",DbQueryExecResult.QUERY_ERROR_NOT_FOUND);
+				} else { 
+					//Song exists
+					//Send it to likeSong (neo4j)
+					dbQueryStatus = this.playlistDriver.likeSong(userName, songId);
+					
+					//likeSong is success, send it to updateSongFavouritesCount (Mongo)
+					if (dbQueryStatus.getdbQueryExecResult() == DbQueryExecResult.QUERY_OK) {
+					
+						HttpUrl.Builder urlBuilder = HttpUrl.parse("http://localhost:3001" + "/updateSongFavouritesCount").newBuilder();
+						urlBuilder.addPathSegment(songId);
+						urlBuilder.addQueryParameter("shouldDecrement", "false");
+						String url = urlBuilder.build().toString();
+						
+						RequestBody body = RequestBody.create(null,new byte[0]);
+						Request requestSong = new Request.Builder() //making request to some other service 
+								.url(url)
+								.method("PUT", body)
+								.build();
+						Call call = client.newCall(requestSong);
+						Response responseFromSongMs = null;
+						String responseFromSong = "";
+
+						try {
+							responseFromSongMs = call.execute();
+							JSONObject result = new JSONObject(responseFromSongMs.body().string());
+							String resultStatus = result.getString("status");
+							if (!resultStatus.equals("OK")) {
+								dbQueryStatus = new DbQueryStatus("Song could not be incremented",DbQueryExecResult.QUERY_ERROR_GENERIC);
+							} 
+						} catch (IOException e) {
+							e.printStackTrace();
+						}
+					}
+			}
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+
 		response = Utils.setResponseStatus(response, dbQueryStatus.getdbQueryExecResult(), dbQueryStatus.getData());
 		return response;
 	}
@@ -155,11 +183,66 @@ public class ProfileController {
 		// TODO: check if songId exists in Song?
 		// songDriver.getSongById/songId
 
-		DbQueryStatus dbQueryStatus = this.playlistDriver.unlikeSong(userName, songId);
-				
-		//TODO: Decrement Song Favorites Count in song microservice 
-		// songDriver.updateSongFavouritesCount/songId?shouldDecrement=true
+		DbQueryStatus dbQueryStatus = null; 
 		
+		//Check if song exists in MongoDb
+		if (songId != null) {
+			HttpUrl.Builder urlGetSong = HttpUrl.parse("http://localhost:3001" + "/getSongById").newBuilder();
+			urlGetSong.addPathSegment(songId);
+			String urlSong = urlGetSong.build().toString();
+			Request requestGetSong = new Request.Builder() //making request to some Song service 
+					.url(urlSong)
+					.method("GET", null)
+					.build();
+			Call callGetSong = client.newCall(requestGetSong);
+			Response responseFromGetSong = null;
+			
+			try {
+				responseFromGetSong = callGetSong.execute();
+				JSONObject data = new JSONObject(responseFromGetSong.body().string());
+				String status = data.getString("status");
+				
+				if (!status.equals("OK")){
+					dbQueryStatus = new DbQueryStatus("Song does not exist in MongoDb",DbQueryExecResult.QUERY_ERROR_NOT_FOUND);
+				} else { 
+					//Song exists
+					//Send it to unlikeSong (neo4j)
+					dbQueryStatus = this.playlistDriver.unlikeSong(userName, songId);
+					
+					//likeSong is success, send it to updateSongFavouritesCount (Mongo)
+					if (dbQueryStatus.getdbQueryExecResult() == DbQueryExecResult.QUERY_OK) {
+					
+						HttpUrl.Builder urlBuilder = HttpUrl.parse("http://localhost:3001" + "/updateSongFavouritesCount").newBuilder();
+						urlBuilder.addPathSegment(songId);
+						urlBuilder.addQueryParameter("shouldDecrement", "true");
+						String url = urlBuilder.build().toString();
+						
+						RequestBody body = RequestBody.create(null,new byte[0]);
+						Request requestSong = new Request.Builder() //making request to some other service 
+								.url(url)
+								.method("PUT", body)
+								.build();
+						Call call = client.newCall(requestSong);
+						Response responseFromSongMs = null;
+						String responseFromSong = "";
+
+						try {
+							responseFromSongMs = call.execute();
+							JSONObject result = new JSONObject(responseFromSongMs.body().string());
+							String resultStatus = result.getString("status");
+							if (!resultStatus.equals("OK")) {
+								dbQueryStatus = new DbQueryStatus("Song could not be incremented",DbQueryExecResult.QUERY_ERROR_GENERIC);
+							} 
+						} catch (IOException e) {
+							e.printStackTrace();
+						}
+					}
+			}
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+
 		response = Utils.setResponseStatus(response, dbQueryStatus.getdbQueryExecResult(), dbQueryStatus.getData());
 		return response;
 	}

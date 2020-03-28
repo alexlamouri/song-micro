@@ -57,7 +57,7 @@ public class PlaylistDriverImpl implements PlaylistDriver {
 					
 					else { // if song in user playlist once
 						
-						String likeSong = String.format("MATCH (nPlaylist:playlist) WHERE nPlaylist.plName = \"%s-favourites\" CREATE (nPlaylist)-[:includes]->(nSong:song {songId: \"%s\"})", userName, songId);
+						String likeSong = String.format("MATCH (nPlaylist:playlist), (nSong:song) WHERE nPlaylist.plName = \"%s-favourites\" AND nSong.songId = \"%s\" CREATE (nPlaylist)-[:includes]->(nSong)", userName, songId);
 						tx.run(likeSong);
 						tx.success();
 						
