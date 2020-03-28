@@ -83,8 +83,9 @@ public class ProfileController {
 
 		Map<String, Object> response = new HashMap<String, Object>();
 		response.put("path", String.format("PUT %s", Utils.getUrl(request)));
-
-		return null;
+		DbQueryStatus dbQueryStatus = this.profileDriver.getAllSongFriendsLike(userName);
+		response = Utils.setResponseStatus(response, dbQueryStatus.getdbQueryExecResult(), dbQueryStatus.getData());
+		return response;
 	}
 
 
@@ -167,6 +168,7 @@ public class ProfileController {
 				e.printStackTrace();
 			}
 		}
+
 		response = Utils.setResponseStatus(response, dbQueryStatus.getdbQueryExecResult(), dbQueryStatus.getData());
 		return response;
 	}
@@ -177,6 +179,9 @@ public class ProfileController {
 
 		Map<String, Object> response = new HashMap<String, Object>();
 		response.put("path", String.format("PUT %s", Utils.getUrl(request)));
+		
+		// TODO: check if songId exists in Song?
+		// songDriver.getSongById/songId
 
 		DbQueryStatus dbQueryStatus = null; 
 		
@@ -237,6 +242,7 @@ public class ProfileController {
 				e.printStackTrace();
 			}
 		}
+
 		response = Utils.setResponseStatus(response, dbQueryStatus.getdbQueryExecResult(), dbQueryStatus.getData());
 		return response;
 	}
