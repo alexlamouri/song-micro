@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.csc301.profilemicroservice.DbQueryExecResult;
+import com.csc301.profilemicroservice.DbQueryStatus;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
@@ -18,8 +20,10 @@ import java.util.HashMap;
 import java.util.Map;
 
 import okhttp3.Call;
+import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
+import okhttp3.RequestBody;
 import okhttp3.Response;
 
 import javax.servlet.http.HttpServletRequest;
@@ -70,8 +74,33 @@ public class SongController {
 
 		Map<String, Object> response = new HashMap<String, Object>();
 		DbQueryStatus dbQueryStatus = this.songDal.deleteSongById(songId);
+		
+		//Check if song was successfully deleted in Mongo, send to deleteSong in profile
+		if (dbQueryStatus.getdbQueryExecResult() == DbQueryExecResult.QUERY_OK) {
+			HttpUrl.Builder urlBuilder = HttpUrl.parse("http://localhost:3002" + "/deleteAllSongsFromDb").newBuilder();
+			urlBuilder.addPathSegment(songId);
+			String url = urlBuilder.build().toString();
+			RequestBody body = RequestBody.create(null,new byte[0]);
+			Request deleteSong = new Request.Builder() //making request to some other service 
+					.url(url)
+					.method("PUT", body)
+					.build();
+			Call call = client.newCall(deleteSong);
+			Response responseFromProfileMs = null;
+			
+			try {
+				//Send to profile
+				responseFromProfileMs = call.execute();
+				JSONObject result = new JSONObject(responseFromProfileMs.body().string());
+				String resultStatus = result.getString("status");
+				if (!resultStatus.equals("OK")) {
+					dbQueryStatus = new DbQueryStatus("Song could not be deleted in Profile",DbQueryExecResult.QUERY_ERROR_GENERIC);
+				} 
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		} 
 		response = Utils.setResponseStatus(response, dbQueryStatus.getdbQueryExecResult(), dbQueryStatus.getData());
-		//Add profile part 
 		return response;
 	}
 
