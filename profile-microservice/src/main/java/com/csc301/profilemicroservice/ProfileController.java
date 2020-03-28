@@ -82,8 +82,9 @@ public class ProfileController {
 
 		Map<String, Object> response = new HashMap<String, Object>();
 		response.put("path", String.format("PUT %s", Utils.getUrl(request)));
-
-		return null;
+		DbQueryStatus dbQueryStatus = this.profileDriver.getAllSongFriendsLike(userName);
+		response = Utils.setResponseStatus(response, dbQueryStatus.getdbQueryExecResult(), dbQueryStatus.getData());
+		return response;
 	}
 
 
@@ -105,7 +106,10 @@ public class ProfileController {
 		Map<String, Object> response = new HashMap<String, Object>();
 		response.put("path", String.format("PUT %s", Utils.getUrl(request)));
 		
-//		String path = String.format("PUT http://localhost:3001/updateSongFavouritesCount/%s?shouldDecrement=false", songId);
+		// TODO: check if songId exists in Song?
+		// songDriver.getSongById/songId
+		
+		String path = String.format("PUT http://localhost:3001/updateSongFavouritesCount/%s?shouldDecrement=false", songId);
 //		try {
 //			if (songId != null) {
 //				HttpUrl.Builder urlBuilder = HttpUrl.parse("http://localhost:3001" + "/updateSongFavouritesCount").newBuilder();
@@ -131,10 +135,12 @@ public class ProfileController {
 //		} catch (Exception e) {
 //			System.out.println("Couldnt increment song");
 //		}
-		//TODO: check if songId exists in Song?
+		
 		DbQueryStatus dbQueryStatus = this.playlistDriver.likeSong(userName, songId);
 		
-		//TODO: Increment Song Favorites Count in song microservice 
+		// TODO: Increment Song Favorites Count in song microservice 
+		// songDriver.updateSongFavouritesCount/songId?shouldDecrement=false
+		
 		response = Utils.setResponseStatus(response, dbQueryStatus.getdbQueryExecResult(), dbQueryStatus.getData());
 		return response;
 	}
@@ -145,11 +151,15 @@ public class ProfileController {
 
 		Map<String, Object> response = new HashMap<String, Object>();
 		response.put("path", String.format("PUT %s", Utils.getUrl(request)));
+		
+		// TODO: check if songId exists in Song?
+		// songDriver.getSongById/songId
 
-		//TODO: check if songId exists in Song?
 		DbQueryStatus dbQueryStatus = this.playlistDriver.unlikeSong(userName, songId);
 				
 		//TODO: Decrement Song Favorites Count in song microservice 
+		// songDriver.updateSongFavouritesCount/songId?shouldDecrement=true
+		
 		response = Utils.setResponseStatus(response, dbQueryStatus.getdbQueryExecResult(), dbQueryStatus.getData());
 		return response;
 	}

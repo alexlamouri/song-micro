@@ -5,6 +5,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
@@ -48,44 +50,31 @@ public class ProfileDriverImpl implements ProfileDriver {
 			String findProfile = String.format("MATCH (nProfile:profile {userName: \"%s\"}) RETURN nProfile", userName);
 			StatementResult profile = tx.run(findProfile);
 			
-			if (profile.hasNext()) { // if existing profile
+			if (profile.hasNext()) { // if Profile exists
 				
 				tx.failure();
 				result = new DbQueryStatus("Username already exists", DbQueryExecResult.QUERY_ERROR_GENERIC);
 			}
 			
-			else {
+			else { // if Profile does not exist
 				
 				String findPlaylist = String.format("MATCH (nPlaylist:playlist {plName: \"%s-favourites\"}) RETURN nPlaylist", userName);
 				StatementResult playlist = tx.run(findPlaylist);
 				
-				if (playlist.hasNext()) { // if existing playlist
+				if (playlist.hasNext()) { // if Playlist exists
 					
 					tx.failure();
 					result = new DbQueryStatus("Playlist already exists", DbQueryExecResult.QUERY_ERROR_GENERIC);
 				}
 				
-				else {
-					
-					String findRelationship = String.format("MATCH p=(nProfile:profile {userName: \"%s\"})-[r:created]->(nPlaylist:playlist {plName: \"%s-favourites\"}) RETURN p", userName, userName);
-					StatementResult relationship = tx.run(findRelationship);
-					
-					if (relationship.hasNext()) { // if existing relationship
+				else { // if Playlist does not exist
 						
-						tx.failure();
-						result = new DbQueryStatus("Relationship already exists", DbQueryExecResult.QUERY_ERROR_GENERIC);
-					}
+					String createProfileAndPlaylist = String.format("CREATE (nProfile:profile {userName: \"%s\", fullName: \"%s\", password: \"%s\"})-[r:created]->(nPlaylist:playlist {plName: \"%s-favourites\"}) ",userName,fullName,password,userName);
+					tx.run(createProfileAndPlaylist);
 					
-					else {
-						
-						String createRelationship = String.format("CREATE (nProfile:profile {userName: \"%s\", fullName: \"%s\", password: \"%s\"})-[r:created]->(nPlaylist:playlist {plName: \"%s-favourites\"}) ",userName,fullName,password,userName);
-						tx.run(createRelationship);
-						tx.success();
-						
-						result = new DbQueryStatus("OK",DbQueryExecResult.QUERY_OK);
-					}
+					tx.success();
+					result = new DbQueryStatus("OK",DbQueryExecResult.QUERY_OK);
 				}
-				
 			}
 			
 			return result;
@@ -93,35 +82,35 @@ public class ProfileDriverImpl implements ProfileDriver {
 	}
 
 	@Override
-	public DbQueryStatus followFriend(String userName, String frndUserName) {
+	public DbQueryStatus followFriend(String userName, String friendUserName) {
 		
 		DbQueryStatus result;
 		
 		try (Transaction tx = driver.session().beginTransaction()) {
 			
-			if (userName.equals(frndUserName)) { // if user and friend are same
+			if (userName.equals(friendUserName)) { // if User and Friend are same
 				
 				tx.failure();
 				result = new DbQueryStatus("User cannot follow self", DbQueryExecResult.QUERY_ERROR_GENERIC);
 			}
 			
-			else { // if user and friend are different
+			else { // if User and Friend are different
 			
-				String findUserProfile = String.format("MATCH (nProfile:profile {userName: \"%s\"}) RETURN nProfile", userName); 
-				StatementResult userProfile = tx.run(findUserProfile);
+				String findUser = String.format("MATCH (nProfile:profile {userName: \"%s\"}) RETURN nProfile", userName); 
+				StatementResult user = tx.run(findUser);
 			
-				if (!userProfile.hasNext()) { // if user profile does not exist
+				if (!user.hasNext()) { // if User does not exist
 					
 					tx.failure();
 					result = new DbQueryStatus("User does not exist", DbQueryExecResult.QUERY_ERROR_NOT_FOUND);
 				} 
 			
-				else { // if user profile exists
+				else { // if User exists
 					
-					String findFriendProfile = String.format("MATCH (nFriendProfile:profile {userName: \"%s\"}) RETURN nFriendProfile", frndUserName); //Matching for user name
-					StatementResult friendProfile = tx.run(findFriendProfile);
+					String findFriend = String.format("MATCH (nFriendProfile:profile {userName: \"%s\"}) RETURN nFriendProfile", friendUserName); //Matching for user name
+					StatementResult friend = tx.run(findFriend);
 				
-					if (!friendProfile.hasNext()) { // if friend profile does not exist
+					if (!friend.hasNext()) { // if Friend does not exist
 						
 						tx.failure();
 						result = new DbQueryStatus("Friend does not exist", DbQueryExecResult.QUERY_ERROR_NOT_FOUND);
@@ -129,20 +118,21 @@ public class ProfileDriverImpl implements ProfileDriver {
 				
 					else {
 						
-						String findFollowing = String.format("MATCH r=(nProfile:profile)-[:follows]->(nFriendProfile:profile) WHERE nProfile.userName = \"%s\" AND nFriendProfile.userName = \"%s\" RETURN r",userName,frndUserName);
+						String findFollowing = String.format("MATCH r=(nProfile:profile)-[:follows]->(nFriendProfile:profile) WHERE nProfile.userName = \"%s\" AND nFriendProfile.userName = \"%s\" RETURN r", userName, friendUserName);
 						StatementResult following = tx.run(findFollowing);
 						
-						if (following.hasNext()) { // check if friend already follows username
+						if (following.hasNext()) { // if User already follows Friend
 							
 							tx.failure();
 							result = new DbQueryStatus("User already follows Friend", DbQueryExecResult.QUERY_ERROR_GENERIC);
 						}
 						
-						else {
-							String followFriend = String.format("MATCH (nProfile:profile),(nFriendProfile:profile) WHERE nProfile.userName = \"%s\" AND nFriendProfile.userName = \"%s\" CREATE (nProfile)-[:follows]->(nFriendProfile)", userName, frndUserName);
+						else { // if User does not follow Friend
+							
+							String followFriend = String.format("MATCH (nProfile:profile),(nFriendProfile:profile) WHERE nProfile.userName = \"%s\" AND nFriendProfile.userName = \"%s\" CREATE (nProfile)-[:follows]->(nFriendProfile)", userName, friendUserName);
 							tx.run(followFriend);
+							
 							tx.success();
-					
 							result = new DbQueryStatus("OK", DbQueryExecResult.QUERY_OK);
 						}
 					}
@@ -154,16 +144,16 @@ public class ProfileDriverImpl implements ProfileDriver {
 	}
 
 	@Override
-	public DbQueryStatus unfollowFriend(String userName, String frndUserName) {
+	public DbQueryStatus unfollowFriend(String userName, String friendUserName) {
 		
 		DbQueryStatus result;
 		
 		try (Transaction tx = driver.session().beginTransaction()) {
 			
-			String findUserProfile = String.format("MATCH (nProfile:profile {userName: \"%s\"}) RETURN nProfile", userName); 
-			StatementResult userProfile = tx.run(findUserProfile);
+			String findUser = String.format("MATCH (nProfile:profile {userName: \"%s\"}) RETURN nProfile", userName); 
+			StatementResult user = tx.run(findUser);
 			
-			if (!userProfile.hasNext()) { // if user profile does not exist
+			if (!user.hasNext()) { // if User does not exist
 				
 				tx.failure();
 				result = new DbQueryStatus("User does not exist", DbQueryExecResult.QUERY_ERROR_NOT_FOUND);
@@ -171,10 +161,10 @@ public class ProfileDriverImpl implements ProfileDriver {
 			
 			else {
 				
-				String findFriendProfile = String.format("MATCH (nFriendProfile:profile {userName: \"%s\"}) RETURN nFriendProfile", frndUserName); //Matching for user name
-				StatementResult friendProfile = tx.run(findFriendProfile);
+				String findFriend = String.format("MATCH (nFriendProfile:profile {userName: \"%s\"}) RETURN nFriendProfile", friendUserName); //Matching for user name
+				StatementResult friend = tx.run(findFriend);
 				
-				if (!friendProfile.hasNext()) { // if friend profile does not exist
+				if (!friend.hasNext()) { // if Friend does not exist
 					
 					tx.failure();
 					result = new DbQueryStatus("Friend does not exist", DbQueryExecResult.QUERY_ERROR_NOT_FOUND);
@@ -182,18 +172,19 @@ public class ProfileDriverImpl implements ProfileDriver {
 				
 				else {
 					
-					String findFollowing = String.format("MATCH r=(nProfile:profile)-[:follows]->(nFriendProfile:profile) WHERE nProfile.userName = \"%s\" AND nFriendProfile.userName = \"%s\" RETURN r",userName,frndUserName);
+					String findFollowing = String.format("MATCH r=(nProfile:profile)-[:follows]->(nFriendProfile:profile) WHERE nProfile.userName = \"%s\" AND nFriendProfile.userName = \"%s\" RETURN r", userName, friendUserName);
 					StatementResult following = tx.run(findFollowing);
 					
-					if (!following.hasNext()) { //check if friend follows user name
+					if (!following.hasNext()) { // if User does not follow Friend
 						
 						tx.failure();
 						result = new DbQueryStatus("User does not follow Friend", DbQueryExecResult.QUERY_ERROR_GENERIC);
 						
 					} 
-					else {
+					
+					else { // if User follows Friend
 						
-						String unfollowFriend = String.format("MATCH (nProfile:profile {userName: \"%s\"})-[f:follows]->(nFriendProfile:profile {userName: \"%s\"}) DELETE f",userName,frndUserName);
+						String unfollowFriend = String.format("MATCH (nProfile:profile {userName: \"%s\"})-[f:follows]->(nFriendProfile:profile {userName: \"%s\"}) DELETE f", userName, friendUserName);
 						tx.run(unfollowFriend);
 						tx.success();
 			
@@ -209,19 +200,56 @@ public class ProfileDriverImpl implements ProfileDriver {
 
 	@Override
 	public DbQueryStatus getAllSongFriendsLike(String userName) {
+		
 		DbQueryStatus result;
-		try (Session session = driver.session()){
-			//check if userName exists 
-			String matchUserName = String.format("MATCH (nProfile:profile {userName: \"%s\"}) RETURN nProfile", userName); 
-			StatementResult resultUserName = session.run(matchUserName);
-			if (!(resultUserName.hasNext())) { 
-				DbQueryStatus response = new DbQueryStatus("Username does not exist",DbQueryExecResult.QUERY_ERROR_NOT_FOUND);
-				return response;
+		
+		try (Transaction tx = driver.session().beginTransaction()) {
+			
+			String findUser = String.format("MATCH (nProfile:profile {userName: \"%s\"}) RETURN nProfile", userName); 
+			StatementResult user = tx.run(findUser);
+			
+			if (!user.hasNext()) { // if User does not exist
+				result = new DbQueryStatus("User does not exist", DbQueryExecResult.QUERY_ERROR_NOT_FOUND);
 			} 
 			
-			//TODO: Complete rest of it 
-			
+			else { // if User exists
+				
+				String findFriends = String.format("MATCH (u:profile)-[r:follows]->(f:profile) WHERE u.userName = \"%s\" RETURN f.userName;", userName);
+				StatementResult friends = tx.run(findFriends);
+				
+				JSONArray friendsFavouritesArray = new JSONArray();
+				
+				while (friends.hasNext()) { // get all Friends
+					
+					Record friend = friends.next();
+					String friendUserName = friend.get("f.userName").asString();
+					System.out.println(friendUserName);
+					
+					String findFavourites = String.format("MATCH (p:playlist)-[i:includes]->(s:song) WHERE p.plName = \"%s-favourites\" RETURN s.songId;", friendUserName);
+					StatementResult favourites = tx.run(findFavourites);
+					
+					JSONArray favouritesArray = new JSONArray();
+					
+					while (favourites.hasNext()) { // get all Friends Favourites
+						
+						Record favourite = favourites.next();
+						String favouriteSongId = favourite.get("s.songId").asString();
+						System.out.println(favouriteSongId);
+						
+						favouritesArray.put(favouriteSongId);
+					}
+					
+					JSONObject friendsFavourites = new JSONObject().put(friendUserName, favouritesArray);
+					System.out.println(friendsFavourites);
+					friendsFavouritesArray.put(friendsFavourites);
+					System.out.println(friendsFavouritesArray);
+				}
+				
+				result = new DbQueryStatus("OK", DbQueryExecResult.QUERY_OK);
+				result.setData(friendsFavouritesArray.toList());
+			}
+
+			return result;
 		}
-		return null;
 	}
 }
