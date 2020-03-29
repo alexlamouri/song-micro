@@ -225,11 +225,12 @@ public class ProfileController {
 				
 			responseGet = callGet.execute();
 			JSONObject dataGet = new JSONObject(responseGet.body().string());
+			String messageGet = dataGet.getString("message");
 			String statusGet = dataGet.getString("status");
 			
 			if (!statusGet.equals("OK")) { // if getSongById fails
 				
-				dbQueryStatus = new DbQueryStatus("Song does not exist in MongoDb", DbQueryExecResult.QUERY_ERROR_NOT_FOUND);
+				dbQueryStatus = new DbQueryStatus(messageGet, DbQueryExecResult.QUERY_ERROR_GENERIC);
 				
 				response = Utils.setResponseStatus(response, dbQueryStatus.getdbQueryExecResult(), dbQueryStatus.getData());
 				response.put("message", dbQueryStatus.getMessage());
@@ -242,8 +243,6 @@ public class ProfileController {
 			
 			if (dbQueryStatus.getdbQueryExecResult() != DbQueryExecResult.QUERY_OK) { // if likeSong fails
 				
-				dbQueryStatus = new DbQueryStatus("Song could not be liked in Neo4j", DbQueryExecResult.QUERY_ERROR_GENERIC);
-				
 				response = Utils.setResponseStatus(response, dbQueryStatus.getdbQueryExecResult(), dbQueryStatus.getData());
 				response.put("message", dbQueryStatus.getMessage());
 				response.put("path", String.format("PUT %s", Utils.getUrl(request)));
@@ -255,7 +254,7 @@ public class ProfileController {
 			urlBuilderUpdate.addPathSegment(songId);
 			urlBuilderUpdate.addQueryParameter("shouldDecrement", "false");
 			String urlUpdate = urlBuilderUpdate.build().toString();
-				
+			
 			Request requestUpdate = new Request.Builder()
 					.url(urlUpdate)
 					.method("PUT", RequestBody.create(null,new byte[0]))
@@ -266,11 +265,12 @@ public class ProfileController {
 			
 			responseUpdate = callUpdate.execute();
 			JSONObject dataUpdate = new JSONObject(responseUpdate.body().string());
+			String messageUpdate = dataUpdate.getString("message");
 			String statusUpdate = dataUpdate.getString("status");
 			
 			if (!statusUpdate.equals("OK")) { // if updateSongFavouritesCount fails
 				
-				dbQueryStatus = new DbQueryStatus("Song could not be updated in MongoDb", DbQueryExecResult.QUERY_ERROR_GENERIC);
+				dbQueryStatus = new DbQueryStatus(messageUpdate, DbQueryExecResult.QUERY_ERROR_GENERIC);
 				
 				response = Utils.setResponseStatus(response, dbQueryStatus.getdbQueryExecResult(), dbQueryStatus.getData());
 				response.put("message", dbQueryStatus.getMessage());
@@ -281,9 +281,16 @@ public class ProfileController {
 		
 		catch (IOException e) {
 				e.printStackTrace();
+				
+				dbQueryStatus = new DbQueryStatus("IO Exception", DbQueryExecResult.QUERY_ERROR_GENERIC);
+				
+				response = Utils.setResponseStatus(response, dbQueryStatus.getdbQueryExecResult(), dbQueryStatus.getData());
+				response.put("message", dbQueryStatus.getMessage());
+				response.put("path", String.format("PUT %s", Utils.getUrl(request)));
+				return response;
 		}
 
-		dbQueryStatus = new DbQueryStatus("OK", DbQueryExecResult.QUERY_OK);
+		dbQueryStatus = new DbQueryStatus("User liked song", DbQueryExecResult.QUERY_OK);
 		
 		response = Utils.setResponseStatus(response, dbQueryStatus.getdbQueryExecResult(), dbQueryStatus.getData());
 		response.put("message", dbQueryStatus.getMessage());
@@ -317,11 +324,12 @@ public class ProfileController {
 				
 			responseGet = callGet.execute();
 			JSONObject dataGet = new JSONObject(responseGet.body().string());
+			String messageGet = dataGet.getString("message");
 			String statusGet = dataGet.getString("status");
 			
 			if (!statusGet.equals("OK")) { // if getSongById fails
 				
-				dbQueryStatus = new DbQueryStatus("Song does not exist in MongoDb", DbQueryExecResult.QUERY_ERROR_NOT_FOUND);
+				dbQueryStatus = new DbQueryStatus(messageGet, DbQueryExecResult.QUERY_ERROR_GENERIC);
 				
 				response = Utils.setResponseStatus(response, dbQueryStatus.getdbQueryExecResult(), dbQueryStatus.getData());
 				response.put("message", dbQueryStatus.getMessage());
@@ -333,8 +341,6 @@ public class ProfileController {
 			dbQueryStatus = this.playlistDriver.unlikeSong(userName, songId);
 			
 			if (dbQueryStatus.getdbQueryExecResult() != DbQueryExecResult.QUERY_OK) { // if likeSong fails
-				
-				dbQueryStatus = new DbQueryStatus("Song could not be unliked in Neo4j", DbQueryExecResult.QUERY_ERROR_GENERIC);
 				
 				response = Utils.setResponseStatus(response, dbQueryStatus.getdbQueryExecResult(), dbQueryStatus.getData());
 				response.put("message", dbQueryStatus.getMessage());
@@ -358,11 +364,12 @@ public class ProfileController {
 			
 			responseUpdate = callUpdate.execute();
 			JSONObject dataUpdate = new JSONObject(responseUpdate.body().string());
+			String messageUpdate = dataUpdate.getString("message");
 			String statusUpdate = dataUpdate.getString("status");
 			
 			if (!statusUpdate.equals("OK")) { // if updateSongFavouritesCount fails
 				
-				dbQueryStatus = new DbQueryStatus("Song could not be updated in MongoDb", DbQueryExecResult.QUERY_ERROR_GENERIC);
+				dbQueryStatus = new DbQueryStatus(messageUpdate, DbQueryExecResult.QUERY_ERROR_GENERIC);
 				
 				response = Utils.setResponseStatus(response, dbQueryStatus.getdbQueryExecResult(), dbQueryStatus.getData());
 				response.put("message", dbQueryStatus.getMessage());
@@ -373,9 +380,16 @@ public class ProfileController {
 		
 		catch (IOException e) {
 				e.printStackTrace();
+				
+				dbQueryStatus = new DbQueryStatus("IO Exception", DbQueryExecResult.QUERY_ERROR_GENERIC);
+				
+				response = Utils.setResponseStatus(response, dbQueryStatus.getdbQueryExecResult(), dbQueryStatus.getData());
+				response.put("message", dbQueryStatus.getMessage());
+				response.put("path", String.format("PUT %s", Utils.getUrl(request)));
+				return response;
 		}
 
-		dbQueryStatus = new DbQueryStatus("OK", DbQueryExecResult.QUERY_OK);
+		dbQueryStatus = new DbQueryStatus("User unliked song", DbQueryExecResult.QUERY_OK);
 		
 		response = Utils.setResponseStatus(response, dbQueryStatus.getdbQueryExecResult(), dbQueryStatus.getData());
 		response.put("message", dbQueryStatus.getMessage());

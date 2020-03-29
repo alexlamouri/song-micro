@@ -78,36 +78,6 @@ public class SongController {
 		Map<String, Object> response = new HashMap<String, Object>();
 		DbQueryStatus dbQueryStatus = this.songDal.deleteSongById(songId);
 		
-		//Check if song was successfully deleted in Mongo, send to deleteSong in profile
-		if (dbQueryStatus.getdbQueryExecResult() == DbQueryExecResult.QUERY_OK) {
-			
-			HttpUrl.Builder urlBuilder = HttpUrl.parse("http://localhost:3002" + "/deleteAllSongsFromDb").newBuilder();
-			urlBuilder.addPathSegment(songId);
-			String url = urlBuilder.build().toString();
-			RequestBody body = RequestBody.create(null,new byte[0]);
-			Request deleteSong = new Request.Builder() //making request to some other service 
-					.url(url)
-					.method("PUT", body)
-					.build();
-			Call call = client.newCall(deleteSong);
-			Response responseFromProfileMs = null;
-			
-			try {
-				//Send to profile
-				responseFromProfileMs = call.execute();
-				JSONObject result = new JSONObject(responseFromProfileMs.body().string());
-				String resultStatus = result.getString("status");
-				
-				if (!resultStatus.equals("OK")) {
-					dbQueryStatus = new DbQueryStatus("Song could not be deleted in Profile",DbQueryExecResult.QUERY_ERROR_GENERIC);
-				} 
-			} 
-			
-			catch (IOException e) {
-				e.printStackTrace();
-			}
-		} 
-		
 		response = Utils.setResponseStatus(response, dbQueryStatus.getdbQueryExecResult(), dbQueryStatus.getData());
 		response.put("message", dbQueryStatus.getMessage());
 		response.put("path", String.format("GET %s", Utils.getUrl(request)));
