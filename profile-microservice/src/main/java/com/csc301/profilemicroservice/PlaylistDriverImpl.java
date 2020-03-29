@@ -72,8 +72,6 @@ public class PlaylistDriverImpl implements PlaylistDriver {
 					
 					if (songInDb.hasNext()) { // if Song in Neo4j
 						
-						System.out.println(1);
-						
 						String likeExistingSong = String.format(
 								"MATCH (nPlaylist:playlist), (nSong:song) "
 								+ "WHERE nPlaylist.plName = \"%s-favourites\" "
@@ -85,8 +83,6 @@ public class PlaylistDriverImpl implements PlaylistDriver {
 					}
 					
 					else { // if Song not in Neo4j
-						
-						System.out.println(2);
 						
 						String likeNewSong = String.format(
 								"MATCH (nPlaylist:playlist) "
