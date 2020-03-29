@@ -48,8 +48,10 @@ public class SongController {
 		Map<String, Object> response = new HashMap<String, Object>();
 	
 		DbQueryStatus dbQueryStatus = this.songDal.findSongById(songId);
+		
 		response = Utils.setResponseStatus(response, dbQueryStatus.getdbQueryExecResult(), dbQueryStatus.getData());
-
+		response.put("message", dbQueryStatus.getMessage());
+		response.put("path", String.format("GET %s", Utils.getUrl(request)));
 		return response;
 	}
 
@@ -59,9 +61,12 @@ public class SongController {
 			HttpServletRequest request) {
 
 		Map<String, Object> response = new HashMap<String, Object>();
+		
 		DbQueryStatus dbQueryStatus = this.songDal.getSongTitleById(songId);
+		
 		response = Utils.setResponseStatus(response, dbQueryStatus.getdbQueryExecResult(), dbQueryStatus.getData());
-
+		response.put("message", dbQueryStatus.getMessage());
+		response.put("path", String.format("GET %s", Utils.getUrl(request)));
 		return response;
 	}
 
@@ -75,6 +80,7 @@ public class SongController {
 		
 		//Check if song was successfully deleted in Mongo, send to deleteSong in profile
 		if (dbQueryStatus.getdbQueryExecResult() == DbQueryExecResult.QUERY_OK) {
+			
 			HttpUrl.Builder urlBuilder = HttpUrl.parse("http://localhost:3002" + "/deleteAllSongsFromDb").newBuilder();
 			urlBuilder.addPathSegment(songId);
 			String url = urlBuilder.build().toString();
@@ -91,14 +97,20 @@ public class SongController {
 				responseFromProfileMs = call.execute();
 				JSONObject result = new JSONObject(responseFromProfileMs.body().string());
 				String resultStatus = result.getString("status");
+				
 				if (!resultStatus.equals("OK")) {
 					dbQueryStatus = new DbQueryStatus("Song could not be deleted in Profile",DbQueryExecResult.QUERY_ERROR_GENERIC);
 				} 
-			} catch (IOException e) {
+			} 
+			
+			catch (IOException e) {
 				e.printStackTrace();
 			}
 		} 
+		
 		response = Utils.setResponseStatus(response, dbQueryStatus.getdbQueryExecResult(), dbQueryStatus.getData());
+		response.put("message", dbQueryStatus.getMessage());
+		response.put("path", String.format("GET %s", Utils.getUrl(request)));
 		return response;
 	}
 
@@ -110,20 +122,30 @@ public class SongController {
 		Map<String, Object> response = new HashMap<String, Object>();
 		
 		if (!(params.containsKey("songName") && params.containsKey("songArtistFullName") && params.containsKey("songAlbum"))){
+			
 			DbQueryStatus dbQueryStatus = new DbQueryStatus("Missing Parameters", DbQueryExecResult.QUERY_ERROR_GENERIC);
+			
 			response = Utils.setResponseStatus(response, dbQueryStatus.getdbQueryExecResult(), dbQueryStatus.getData());
+			response.put("message", dbQueryStatus.getMessage());
+			response.put("path", String.format("GET %s", Utils.getUrl(request)));
 			return response;
 		}
 		
-		String newSongName = params.get("songName");
-		String newSongArtist = params.get("songArtistFullName");
-		String newSongAlbum = params.get("songAlbum");
-		Song newSong = new Song(newSongName, newSongArtist, newSongAlbum);
-		DbQueryStatus dbQueryStatus = this.songDal.addSong(newSong);
-		dbQueryStatus.setData(newSong);
-		response = Utils.setResponseStatus(response, dbQueryStatus.getdbQueryExecResult(), dbQueryStatus.getData());
-
-		return response;
+		else {
+			
+			String newSongName = params.get("songName");
+			String newSongArtist = params.get("songArtistFullName");
+			String newSongAlbum = params.get("songAlbum");
+			Song newSong = new Song(newSongName, newSongArtist, newSongAlbum);
+			
+			DbQueryStatus dbQueryStatus = this.songDal.addSong(newSong);
+			dbQueryStatus.setData(newSong);
+			
+			response = Utils.setResponseStatus(response, dbQueryStatus.getdbQueryExecResult(), dbQueryStatus.getData());
+			response.put("message", dbQueryStatus.getMessage());
+			response.put("path", String.format("GET %s", Utils.getUrl(request)));
+			return response;
+		}	
 	}
 
 	
@@ -132,16 +154,37 @@ public class SongController {
 			@RequestParam("shouldDecrement") String shouldDecrement, HttpServletRequest request) {
 
 		Map<String, Object> response = new HashMap<String, Object>();
+		
+		
 		if (shouldDecrement.equals("true")) {
+			
 			DbQueryStatus dbQueryStatus = this.songDal.updateSongFavouritesCount(songId, true);
+			
 			response = Utils.setResponseStatus(response, dbQueryStatus.getdbQueryExecResult(), dbQueryStatus.getData());
-		} else if (shouldDecrement.equals("false")) {
+			response.put("message", dbQueryStatus.getMessage());
+			response.put("path", String.format("GET %s", Utils.getUrl(request)));
+			return response;
+		} 
+		
+		else if (shouldDecrement.equals("false")) {
+			
 			DbQueryStatus dbQueryStatus = this.songDal.updateSongFavouritesCount(songId, false);
+			
 			response = Utils.setResponseStatus(response, dbQueryStatus.getdbQueryExecResult(), dbQueryStatus.getData());
-		} else { //if shouldDecrement is something other than true or false
+			response.put("message", dbQueryStatus.getMessage());
+			response.put("path", String.format("GET %s", Utils.getUrl(request)));
+			return response;
+		} 
+		
+		else { //if shouldDecrement is something other than true or false
+			
 			DbQueryStatus dbQueryStatus = new DbQueryStatus("Wrong Parameters", DbQueryExecResult.QUERY_ERROR_GENERIC);
+			
 			response = Utils.setResponseStatus(response, dbQueryStatus.getdbQueryExecResult(), dbQueryStatus.getData());
+			response.put("message", dbQueryStatus.getMessage());
+			response.put("path", String.format("GET %s", Utils.getUrl(request)));
+			return response;
 		}
-		return response;
 	}
+	
 }

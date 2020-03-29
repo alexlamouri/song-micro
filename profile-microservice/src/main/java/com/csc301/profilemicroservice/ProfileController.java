@@ -53,18 +53,29 @@ public class ProfileController {
 	@RequestMapping(value = "/profile", method = RequestMethod.POST)
 	public @ResponseBody Map<String, Object> addProfile(@RequestParam Map<String, String> params,
 			HttpServletRequest request) {
+		
 		Map<String, Object> response = new HashMap<String, Object>();
-		response.put("path", String.format("POST %s", Utils.getUrl(request)));
+		DbQueryStatus dbQueryStatus;
+		
 		if (!(params.containsKey("userName") && params.containsKey("fullName") && params.containsKey("password"))){
-			DbQueryStatus dbQueryStatus = new DbQueryStatus("Missing Parameters", DbQueryExecResult.QUERY_ERROR_GENERIC);
+			
+			dbQueryStatus = new DbQueryStatus("Missing Parameters", DbQueryExecResult.QUERY_ERROR_GENERIC);
+			
 			response = Utils.setResponseStatus(response, dbQueryStatus.getdbQueryExecResult(), dbQueryStatus.getData());
+			response.put("message", dbQueryStatus.getMessage());
+			response.put("path", String.format("PUT %s", Utils.getUrl(request)));
 			return response;
 		}
+			
 		String newUserName = params.get("userName");
 		String newFullName = params.get("fullName");
-		String newPasswd = params.get("password");
-		DbQueryStatus dbQueryStatus = this.profileDriver.createUserProfile(newUserName, newFullName, newPasswd);
+		String newPassword = params.get("password");
+		
+		dbQueryStatus = this.profileDriver.createUserProfile(newUserName, newFullName, newPassword);
+		
 		response = Utils.setResponseStatus(response, dbQueryStatus.getdbQueryExecResult(), dbQueryStatus.getData());
+		response.put("message", dbQueryStatus.getMessage());
+		response.put("path", String.format("PUT %s", Utils.getUrl(request)));
 		return response;
 	}
 
@@ -73,9 +84,12 @@ public class ProfileController {
 			@PathVariable("friendUserName") String friendUserName, HttpServletRequest request) {
 
 		Map<String, Object> response = new HashMap<String, Object>();
-		response.put("path", String.format("PUT %s", Utils.getUrl(request)));
+		
 		DbQueryStatus dbQueryStatus = this.profileDriver.followFriend(userName, friendUserName);
+		
 		response = Utils.setResponseStatus(response, dbQueryStatus.getdbQueryExecResult(), dbQueryStatus.getData());
+		response.put("message", dbQueryStatus.getMessage());
+		response.put("path", String.format("PUT %s", Utils.getUrl(request)));
 		return response;
 	}
 
@@ -84,7 +98,6 @@ public class ProfileController {
 			HttpServletRequest request) {
 
 		Map<String, Object> response = new HashMap<String, Object>();
-		response.put("path", String.format("PUT %s", Utils.getUrl(request)));
 		DbQueryStatus dbQueryStatus;
 		
 		try {
@@ -92,9 +105,13 @@ public class ProfileController {
 			// 1 : Get all Songs Liked by Friends in Neo4j
 			dbQueryStatus = this.profileDriver.getAllSongFriendsLike(userName);
 			
-			if (dbQueryStatus.getdbQueryExecResult() != DbQueryExecResult.QUERY_OK) { // if likeSong fails
-				dbQueryStatus = new DbQueryStatus("Could not get Songs liked by Friends in Neo4j", DbQueryExecResult.QUERY_ERROR_GENERIC);
+			if (dbQueryStatus.getdbQueryExecResult() != DbQueryExecResult.QUERY_OK) { // if getAllSongFriendsLike fails
+				
+				dbQueryStatus = new DbQueryStatus(String.format("getAllSongFriendsLike failed for user %s", userName), DbQueryExecResult.QUERY_ERROR_GENERIC);
+				
 				response = Utils.setResponseStatus(response, dbQueryStatus.getdbQueryExecResult(), dbQueryStatus.getData());
+				response.put("message", dbQueryStatus.getMessage());
+				response.put("path", String.format("PUT %s", Utils.getUrl(request)));
 				return response;
 			}
 		
@@ -131,31 +148,43 @@ public class ProfileController {
 					String statusGet = dataGet.getString("status");
 					
 					if (!statusGet.equals("OK")) { // if getSongTitleById fails
-						dbQueryStatus = new DbQueryStatus("Song could not be found in MongoDb", DbQueryExecResult.QUERY_ERROR_NOT_FOUND);
+						
+						dbQueryStatus = new DbQueryStatus(String.format("SongId %s for friend %s could not be found", songId, friend), DbQueryExecResult.QUERY_ERROR_NOT_FOUND);
+						
 						response = Utils.setResponseStatus(response, dbQueryStatus.getdbQueryExecResult(), dbQueryStatus.getData());
+						response.put("message", dbQueryStatus.getMessage());
+						response.put("path", String.format("PUT %s", Utils.getUrl(request)));
 						return response;
 					} 
 					
-					songTitleFriendLike.put(dataGet.get("data"));
+					songTitleFriendLike.put(dataGet.get("data")); // add liked song songTitle
 				}
 				
-				allSongTitleFriendLike.put(friend, songTitleFriendLike);
+				allSongTitleFriendLike.put(friend, songTitleFriendLike); // add Friend and liked songs songTitles
 			}
 			
+			
 			dbQueryStatus = new DbQueryStatus("OK", DbQueryExecResult.QUERY_OK);
-			dbQueryStatus.setData(allSongTitleFriendLike.toString());
-			System.out.println(allSongTitleFriendLike);
+			dbQueryStatus.setData(allSongTitleFriendLike.toMap());
+			
 			response = Utils.setResponseStatus(response, dbQueryStatus.getdbQueryExecResult(), dbQueryStatus.getData());
+			response.put("message", dbQueryStatus.getMessage());
+			response.put("path", String.format("PUT %s", Utils.getUrl(request)));
 			return response;
 		}
 			
 		catch (IOException e) {
 			e.printStackTrace();
+			
 			dbQueryStatus = new DbQueryStatus("IOException", DbQueryExecResult.QUERY_ERROR_GENERIC);
+			
 			response = Utils.setResponseStatus(response, dbQueryStatus.getdbQueryExecResult(), dbQueryStatus.getData());
+			response.put("message", dbQueryStatus.getMessage());
+			response.put("path", String.format("PUT %s", Utils.getUrl(request)));
 			return response;
 		}	
 	}
+	
 
 
 	@RequestMapping(value = "/unfollowFriend/{userName}/{friendUserName}", method = RequestMethod.PUT)
@@ -163,9 +192,12 @@ public class ProfileController {
 			@PathVariable("friendUserName") String friendUserName, HttpServletRequest request) {
 
 		Map<String, Object> response = new HashMap<String, Object>();
-		response.put("path", String.format("PUT %s", Utils.getUrl(request)));
+		
 		DbQueryStatus dbQueryStatus = this.profileDriver.unfollowFriend(userName, friendUserName);
+		
 		response = Utils.setResponseStatus(response, dbQueryStatus.getdbQueryExecResult(), dbQueryStatus.getData());
+		response.put("message", dbQueryStatus.getMessage());
+		response.put("path", String.format("PUT %s", Utils.getUrl(request)));
 		return response;
 	}
 
@@ -174,8 +206,6 @@ public class ProfileController {
 			@PathVariable("songId") String songId, HttpServletRequest request) {
 
 		Map<String, Object> response = new HashMap<String, Object>();
-		response.put("path", String.format("PUT %s", Utils.getUrl(request)));
-
 		DbQueryStatus dbQueryStatus; 
 		
 		try {
@@ -198,8 +228,12 @@ public class ProfileController {
 			String statusGet = dataGet.getString("status");
 			
 			if (!statusGet.equals("OK")) { // if getSongById fails
+				
 				dbQueryStatus = new DbQueryStatus("Song does not exist in MongoDb", DbQueryExecResult.QUERY_ERROR_NOT_FOUND);
+				
 				response = Utils.setResponseStatus(response, dbQueryStatus.getdbQueryExecResult(), dbQueryStatus.getData());
+				response.put("message", dbQueryStatus.getMessage());
+				response.put("path", String.format("PUT %s", Utils.getUrl(request)));
 				return response;
 			} 
 				
@@ -207,8 +241,12 @@ public class ProfileController {
 			dbQueryStatus = this.playlistDriver.likeSong(userName, songId);
 			
 			if (dbQueryStatus.getdbQueryExecResult() != DbQueryExecResult.QUERY_OK) { // if likeSong fails
+				
 				dbQueryStatus = new DbQueryStatus("Song could not be liked in Neo4j", DbQueryExecResult.QUERY_ERROR_GENERIC);
+				
 				response = Utils.setResponseStatus(response, dbQueryStatus.getdbQueryExecResult(), dbQueryStatus.getData());
+				response.put("message", dbQueryStatus.getMessage());
+				response.put("path", String.format("PUT %s", Utils.getUrl(request)));
 				return response;
 			}
 			
@@ -231,8 +269,12 @@ public class ProfileController {
 			String statusUpdate = dataUpdate.getString("status");
 			
 			if (!statusUpdate.equals("OK")) { // if updateSongFavouritesCount fails
+				
 				dbQueryStatus = new DbQueryStatus("Song could not be updated in MongoDb", DbQueryExecResult.QUERY_ERROR_GENERIC);
+				
 				response = Utils.setResponseStatus(response, dbQueryStatus.getdbQueryExecResult(), dbQueryStatus.getData());
+				response.put("message", dbQueryStatus.getMessage());
+				response.put("path", String.format("PUT %s", Utils.getUrl(request)));
 				return response;
 			} 
 		} 
@@ -242,16 +284,19 @@ public class ProfileController {
 		}
 
 		dbQueryStatus = new DbQueryStatus("OK", DbQueryExecResult.QUERY_OK);
+		
 		response = Utils.setResponseStatus(response, dbQueryStatus.getdbQueryExecResult(), dbQueryStatus.getData());
+		response.put("message", dbQueryStatus.getMessage());
+		response.put("path", String.format("PUT %s", Utils.getUrl(request)));
 		return response;
 	}
+	
 
 	@RequestMapping(value = "/unlikeSong/{userName}/{songId}", method = RequestMethod.PUT)
 	public @ResponseBody Map<String, Object> unlikeSong(@PathVariable("userName") String userName,
 			@PathVariable("songId") String songId, HttpServletRequest request) {
 
 		Map<String, Object> response = new HashMap<String, Object>();
-		response.put("path", String.format("PUT %s", Utils.getUrl(request)));
 
 		DbQueryStatus dbQueryStatus; 
 		
@@ -275,8 +320,12 @@ public class ProfileController {
 			String statusGet = dataGet.getString("status");
 			
 			if (!statusGet.equals("OK")) { // if getSongById fails
+				
 				dbQueryStatus = new DbQueryStatus("Song does not exist in MongoDb", DbQueryExecResult.QUERY_ERROR_NOT_FOUND);
+				
 				response = Utils.setResponseStatus(response, dbQueryStatus.getdbQueryExecResult(), dbQueryStatus.getData());
+				response.put("message", dbQueryStatus.getMessage());
+				response.put("path", String.format("PUT %s", Utils.getUrl(request)));
 				return response;
 			} 
 				
@@ -284,8 +333,12 @@ public class ProfileController {
 			dbQueryStatus = this.playlistDriver.unlikeSong(userName, songId);
 			
 			if (dbQueryStatus.getdbQueryExecResult() != DbQueryExecResult.QUERY_OK) { // if likeSong fails
+				
 				dbQueryStatus = new DbQueryStatus("Song could not be unliked in Neo4j", DbQueryExecResult.QUERY_ERROR_GENERIC);
+				
 				response = Utils.setResponseStatus(response, dbQueryStatus.getdbQueryExecResult(), dbQueryStatus.getData());
+				response.put("message", dbQueryStatus.getMessage());
+				response.put("path", String.format("PUT %s", Utils.getUrl(request)));
 				return response;
 			}
 			
@@ -308,8 +361,12 @@ public class ProfileController {
 			String statusUpdate = dataUpdate.getString("status");
 			
 			if (!statusUpdate.equals("OK")) { // if updateSongFavouritesCount fails
+				
 				dbQueryStatus = new DbQueryStatus("Song could not be updated in MongoDb", DbQueryExecResult.QUERY_ERROR_GENERIC);
+				
 				response = Utils.setResponseStatus(response, dbQueryStatus.getdbQueryExecResult(), dbQueryStatus.getData());
+				response.put("message", dbQueryStatus.getMessage());
+				response.put("path", String.format("PUT %s", Utils.getUrl(request)));
 				return response;
 			} 
 		} 
@@ -319,20 +376,26 @@ public class ProfileController {
 		}
 
 		dbQueryStatus = new DbQueryStatus("OK", DbQueryExecResult.QUERY_OK);
+		
 		response = Utils.setResponseStatus(response, dbQueryStatus.getdbQueryExecResult(), dbQueryStatus.getData());
+		response.put("message", dbQueryStatus.getMessage());
+		response.put("path", String.format("PUT %s", Utils.getUrl(request)));
 		return response;
 	}
+	
 
 	@RequestMapping(value = "/deleteAllSongsFromDb/{songId}", method = RequestMethod.PUT)
 	public @ResponseBody Map<String, Object> deleteAllSongsFromDb(@PathVariable("songId") String songId,
 			HttpServletRequest request) {
 
 		Map<String, Object> response = new HashMap<String, Object>();
-		response.put("path", String.format("PUT %s", Utils.getUrl(request)));
 		
 		DbQueryStatus dbQueryStatus = this.playlistDriver.deleteSongFromDb(songId);
 		
 		response = Utils.setResponseStatus(response, dbQueryStatus.getdbQueryExecResult(), dbQueryStatus.getData());
+		response.put("message", dbQueryStatus.getMessage());
+		response.put("path", String.format("PUT %s", Utils.getUrl(request)));
 		return response;
 	}
+	
 }
