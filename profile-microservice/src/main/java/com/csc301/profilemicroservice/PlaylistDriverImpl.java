@@ -31,46 +31,72 @@ public class PlaylistDriverImpl implements PlaylistDriver {
 		
 		try (Transaction tx = driver.session().beginTransaction()) {
 			
-			String findPlaylist = String.format("MATCH (nPlaylist:playlist {plName: \"%s-favourites\"}) RETURN nPlaylist", userName);
+			String findPlaylist = String.format(
+					"MATCH r = (nProfile:profile)-[:created]->(nPlaylist:playlist)"
+					+ "WHERE nProfile.userName = \"%s\" "
+					+ "AND nPlaylist.plName = \"%s-favourites\" "
+					+ "RETURN r", 
+					userName, userName);
 			StatementResult playlist = tx.run(findPlaylist);
 			
-			if (!playlist.hasNext()) { // if user playlist not found
+			if (!playlist.hasNext()) { // if User's Playlist not found
 				
 				tx.failure();
 				result = new DbQueryStatus("User does not exist", DbQueryExecResult.QUERY_ERROR_NOT_FOUND);
 			}
 			
-			else { // if user playlist found
+			else { // if User's Playlist found
 				
-				String findSong = String.format("MATCH r=(nPlaylist:playlist {plName: \"%s-favourites\"})-[:includes]->(nSong:song {songId: \"%s\"}) RETURN r", userName, songId);
-				StatementResult song = tx.run(findSong);
+				String findSongInPlaylist = String.format(
+						"MATCH r = (nPlaylist:playlist)-[:includes]->(nSong:song) "
+						+ "WHERE nPlaylist.plName = \"%s-favourites\" "
+						+ "AND nSong.songId = \"%s\" "
+						+ "RETURN r", 
+						userName, songId);
+				StatementResult songInPlaylist = tx.run(findSongInPlaylist);
 				
-				if (song.hasNext()) { // if song in user playlist
+				if (songInPlaylist.hasNext()) { // if Song in User's Playlist
 					
-					song.next();
-					
-					if (song.hasNext()) { // if song in user playlist twice
-						
-						tx.failure();
-						result = new DbQueryStatus("Song already in user's favourites twice", DbQueryExecResult.QUERY_ERROR_GENERIC);
-					}
-					
-					else { // if song in user playlist once
-						
-						String likeSong = String.format("MATCH (nPlaylist:playlist), (nSong:song) WHERE nPlaylist.plName = \"%s-favourites\" AND nSong.songId = \"%s\" CREATE (nPlaylist)-[:includes]->(nSong)", userName, songId);
-						tx.run(likeSong);
-						tx.success();
-						
-						result = new DbQueryStatus("OK", DbQueryExecResult.QUERY_OK);	
-					}	
+					tx.failure();
+					result = new DbQueryStatus("Song already liked by User", DbQueryExecResult.QUERY_ERROR_GENERIC);
 				}
 				
-				else { // if song not in user playlist
+				else { // if song not in User's Playlist
 					
-					String likeSong = String.format("MATCH (nPlaylist:playlist) WHERE nPlaylist.plName = \"%s-favourites\" CREATE (nPlaylist)-[:includes]->(nSong:song {songId: \"%s\"})", userName, songId);
-					tx.run(likeSong);
-					tx.success();
+					String findSongInDb = String.format(
+							"MATCH (nSong:song) "
+							+ "WHERE nSong.songId = \"%s\" "
+							+ "RETURN nSong", 
+							songId);
+					StatementResult songInDb = tx.run(findSongInDb);
 					
+					if (songInDb.hasNext()) { // if Song in Neo4j
+						
+						System.out.println(1);
+						
+						String likeExistingSong = String.format(
+								"MATCH (nPlaylist:playlist), (nSong:song) "
+								+ "WHERE nPlaylist.plName = \"%s-favourites\" "
+								+ "AND nSong.songId = \"%s\" "
+								+ "CREATE (nPlaylist)-[:includes]->(nSong)", 
+								userName, songId);
+						tx.run(likeExistingSong);
+						tx.success();
+					}
+					
+					else { // if Song not in Neo4j
+						
+						System.out.println(2);
+						
+						String likeNewSong = String.format(
+								"MATCH (nPlaylist:playlist) "
+								+ "WHERE nPlaylist.plName = \"%s-favourites\" "
+								+ "CREATE (nPlaylist)-[:includes]->(nSong:song {songId: \"%s\"})", 
+								userName, songId);
+						tx.run(likeNewSong);
+						tx.success();
+					}
+				
 					result = new DbQueryStatus("OK", DbQueryExecResult.QUERY_OK);	
 				}	
 			}	
@@ -86,7 +112,12 @@ public class PlaylistDriverImpl implements PlaylistDriver {
 		
 		try (Transaction tx = driver.session().beginTransaction()) {
 			
-			String findPlaylist = String.format("MATCH (nPlaylist:playlist {plName: \"%s-favourites\"}) RETURN nPlaylist", userName);
+			String findPlaylist = String.format(
+					"MATCH r = (nProfile:profile)-[:created]->(nPlaylist:playlist)"
+					+ "WHERE nProfile.userName = \"%s\" "
+					+ "AND nPlaylist.plName = \"%s-favourites\" "
+					+ "RETURN r", 
+					userName, userName);
 			StatementResult playlist = tx.run(findPlaylist);
 			
 			if (!playlist.hasNext()) { // if user playlist not found
@@ -97,10 +128,15 @@ public class PlaylistDriverImpl implements PlaylistDriver {
 			
 			else { // if user playlist found
 				
-				String findSong = String.format("MATCH r=(nPlaylist:playlist {plName: \"%s-favourites\"})-[:includes]->(nSong:song {songId: \"%s\"}) RETURN r", userName, songId);
-				StatementResult song = tx.run(findSong);
+				String findSongInPlaylist = String.format(
+						"MATCH r = (nPlaylist:playlist)-[:includes]->(nSong:song) "
+						+ "WHERE nPlaylist.plName = \"%s-favourites\" "
+						+ "AND nSong.songId = \"%s\" "
+						+ "RETURN r", 
+						userName, songId);
+				StatementResult songInPlaylist = tx.run(findSongInPlaylist);
 				
-				if (!song.hasNext()) { // if song not in user playlist
+				if (!songInPlaylist.hasNext()) { // if song not in user playlist
 					
 					tx.failure();
 					result = new DbQueryStatus("Song not in favourites", DbQueryExecResult.QUERY_ERROR_GENERIC);
@@ -108,7 +144,11 @@ public class PlaylistDriverImpl implements PlaylistDriver {
 				
 				else { // if song in user playlist
 					
-					String unlikeSong = String.format("MATCH (nPlaylist:playlist {plName: \"%s-favourites\"})-[r:includes]->(nSong:song {songId: \"%s\"}) DELETE r", userName, songId);
+					String unlikeSong = String.format(
+							"MATCH (nPlaylist:playlist)-[i:includes]->(nSong:song) "
+							+ "WHERE nPlaylist.plName = \"%s-favourites\" "
+							+ "AND nSong.songId = \"%s\" "
+							+ "DELETE i", userName, songId);
 					tx.run(unlikeSong);
 					tx.success();
 					
