@@ -217,36 +217,35 @@ public class ProfileDriverImpl implements ProfileDriver {
 				String findFriends = String.format("MATCH (u:profile)-[r:follows]->(f:profile) WHERE u.userName = \"%s\" RETURN f.userName;", userName);
 				StatementResult friends = tx.run(findFriends);
 				
-				JSONArray friendsFavouritesArray = new JSONArray();
+				JSONObject allSongsFriendsLike = new JSONObject();
 				
 				while (friends.hasNext()) { // get all Friends
 					
 					Record friend = friends.next();
 					String friendUserName = friend.get("f.userName").asString();
-					System.out.println(friendUserName);
 					
-					String findFavourites = String.format("MATCH (p:playlist)-[i:includes]->(s:song) WHERE p.plName = \"%s-favourites\" RETURN s.songId;", friendUserName);
+					String findFavourites = String.format(
+							"MATCH (p:playlist)-[i:includes]->(s:song) "
+							+ "WHERE p.plName = \"%s-favourites\" "
+							+ "RETURN s.songId;", 
+							friendUserName);
+					
 					StatementResult favourites = tx.run(findFavourites);
 					
-					JSONArray favouritesArray = new JSONArray();
+					ArrayList<Object> songsFriendLikes = new ArrayList<Object>();
 					
 					while (favourites.hasNext()) { // get all Friends Favourites
 						
 						Record favourite = favourites.next();
 						String favouriteSongId = favourite.get("s.songId").asString();
-						System.out.println(favouriteSongId);
-						
-						favouritesArray.put(favouriteSongId);
+						songsFriendLikes.add(favouriteSongId);
 					}
 					
-					JSONObject friendsFavourites = new JSONObject().put(friendUserName, favouritesArray);
-					System.out.println(friendsFavourites);
-					friendsFavouritesArray.put(friendsFavourites);
-					System.out.println(friendsFavouritesArray);
+					allSongsFriendsLike.put(friendUserName, songsFriendLikes);
 				}
 				
 				result = new DbQueryStatus("OK", DbQueryExecResult.QUERY_OK);
-				result.setData(friendsFavouritesArray.toList());
+				result.setData(allSongsFriendsLike);
 			}
 
 			return result;

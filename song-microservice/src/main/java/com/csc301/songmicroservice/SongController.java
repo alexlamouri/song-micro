@@ -10,8 +10,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.csc301.profilemicroservice.DbQueryExecResult;
-import com.csc301.profilemicroservice.DbQueryStatus;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.IOException;

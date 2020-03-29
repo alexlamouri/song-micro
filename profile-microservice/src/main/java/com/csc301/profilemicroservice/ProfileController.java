@@ -1,5 +1,6 @@
 package com.csc301.profilemicroservice;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -23,6 +24,7 @@ import okhttp3.Response;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -83,9 +85,76 @@ public class ProfileController {
 
 		Map<String, Object> response = new HashMap<String, Object>();
 		response.put("path", String.format("PUT %s", Utils.getUrl(request)));
-		DbQueryStatus dbQueryStatus = this.profileDriver.getAllSongFriendsLike(userName);
-		response = Utils.setResponseStatus(response, dbQueryStatus.getdbQueryExecResult(), dbQueryStatus.getData());
-		return response;
+		DbQueryStatus dbQueryStatus;
+		
+		try {
+			
+			// 1 : Get all Songs Liked by Friends in Neo4j
+			dbQueryStatus = this.profileDriver.getAllSongFriendsLike(userName);
+			
+			if (dbQueryStatus.getdbQueryExecResult() != DbQueryExecResult.QUERY_OK) { // if likeSong fails
+				dbQueryStatus = new DbQueryStatus("Could not get Songs liked by Friends in Neo4j", DbQueryExecResult.QUERY_ERROR_GENERIC);
+				response = Utils.setResponseStatus(response, dbQueryStatus.getdbQueryExecResult(), dbQueryStatus.getData());
+				return response;
+			}
+		
+			JSONObject allSongIdFriendLike = (JSONObject) dbQueryStatus.getData();
+			JSONObject allSongTitleFriendLike = new JSONObject();
+			
+			Iterator<String> friends = allSongIdFriendLike.keys();
+			
+			while (friends.hasNext()) {
+				
+				String friend = friends.next();
+				
+				JSONArray songIdFriendLike = (JSONArray) allSongIdFriendLike.get(friend);
+				JSONArray songTitleFriendLike = new JSONArray();
+				
+				for (int i = 0; i < songIdFriendLike.length(); i++) {
+					
+					String songId = songIdFriendLike.get(i).toString();
+					
+					HttpUrl.Builder urlBuilderGet = HttpUrl.parse("http://localhost:3001" + "/getSongTitleById").newBuilder();
+					urlBuilderGet.addPathSegment(songId);
+					String urlGet = urlBuilderGet.build().toString();
+						
+					Request requestGet = new Request.Builder()
+							.url(urlGet)
+							.method("GET", null)
+							.build();
+					
+					Call callGet = client.newCall(requestGet);
+					Response responseGet = null;
+					
+					responseGet = callGet.execute();
+					JSONObject dataGet = new JSONObject(responseGet.body().string());
+					String statusGet = dataGet.getString("status");
+					
+					if (!statusGet.equals("OK")) { // if getSongTitleById fails
+						dbQueryStatus = new DbQueryStatus("Song could not be found in MongoDb", DbQueryExecResult.QUERY_ERROR_NOT_FOUND);
+						response = Utils.setResponseStatus(response, dbQueryStatus.getdbQueryExecResult(), dbQueryStatus.getData());
+						return response;
+					} 
+					
+					songTitleFriendLike.put(dataGet.get("data"));
+				}
+				
+				allSongTitleFriendLike.put(friend, songTitleFriendLike);
+			}
+			
+			dbQueryStatus = new DbQueryStatus("OK", DbQueryExecResult.QUERY_OK);
+			dbQueryStatus.setData(allSongTitleFriendLike.toString());
+			System.out.println(allSongTitleFriendLike);
+			response = Utils.setResponseStatus(response, dbQueryStatus.getdbQueryExecResult(), dbQueryStatus.getData());
+			return response;
+		}
+			
+		catch (IOException e) {
+			e.printStackTrace();
+			dbQueryStatus = new DbQueryStatus("IOException", DbQueryExecResult.QUERY_ERROR_GENERIC);
+			response = Utils.setResponseStatus(response, dbQueryStatus.getdbQueryExecResult(), dbQueryStatus.getData());
+			return response;
+		}	
 	}
 
 
