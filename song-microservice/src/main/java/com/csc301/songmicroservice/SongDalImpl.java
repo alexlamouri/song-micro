@@ -36,17 +36,17 @@ public class SongDalImpl implements SongDal {
 				
 				this.db.insert(songToAdd);
 				
-				result = new DbQueryStatus("OK", DbQueryExecResult.QUERY_OK);
+				result = new DbQueryStatus("Added song", DbQueryExecResult.QUERY_OK);
 				result.setData(songToAdd.getJsonRepresentation());
 			}
 			
 			else { // if duplicate song
-				result = new DbQueryStatus("DuplicateSongError", DbQueryExecResult.QUERY_ERROR_GENERIC);
+				result = new DbQueryStatus("Song already added", DbQueryExecResult.QUERY_ERROR_GENERIC);
 			}
 		}
 		
 		catch (JSONException e) {
-			result = new DbQueryStatus("JSONError", DbQueryExecResult.QUERY_ERROR_GENERIC);
+			result = new DbQueryStatus("JSON Error", DbQueryExecResult.QUERY_ERROR_GENERIC);
 		}
 		
 		return result;
@@ -59,26 +59,35 @@ public class SongDalImpl implements SongDal {
 		
 		try {
 			
+			if (!ObjectId.isValid(songId)) {
+				
+				result = new DbQueryStatus("songId is not a valid id", DbQueryExecResult.QUERY_ERROR_GENERIC);
+				return result;
+			}
+			
 			Query findSong = new Query();
 			findSong.addCriteria(Criteria.where("_id").is(songId));
 			Song foundSong = this.db.findOne(findSong, Song.class);
 			
 			if (foundSong != null) { // if song found by id
 				
-				result = new DbQueryStatus("OK", DbQueryExecResult.QUERY_OK);
+				result = new DbQueryStatus("Song found", DbQueryExecResult.QUERY_OK);
 				result.setData(foundSong.getJsonRepresentation());
+				return result;
 			}
 			
 			else { // if song not found by id
-				result = new DbQueryStatus("SongNotFoundError", DbQueryExecResult.QUERY_ERROR_NOT_FOUND);
+				
+				result = new DbQueryStatus("Song not found", DbQueryExecResult.QUERY_ERROR_NOT_FOUND);
+				return result;
 			}
 		}
 		
 		catch (JSONException e) {
-			result = new DbQueryStatus("JSONError", DbQueryExecResult.QUERY_ERROR_GENERIC);
+			
+			result = new DbQueryStatus("JSON Error", DbQueryExecResult.QUERY_ERROR_GENERIC);
+			return result;
 		}
-		
-		return result;
 	}
 
 	@Override
@@ -88,28 +97,35 @@ public class SongDalImpl implements SongDal {
 		
 		try {
 			
+			if (!ObjectId.isValid(songId)) {
+				
+				result = new DbQueryStatus("songId is not a valid id", DbQueryExecResult.QUERY_ERROR_GENERIC);
+				return result;
+			}
+			
 			Query findSong = new Query();
 			findSong.addCriteria(Criteria.where("_id").is(songId));
 			Song foundSong = this.db.findOne(findSong, Song.class);
 			
 			if (foundSong != null) { // if song found by id
 				
-				result = new DbQueryStatus("OK", DbQueryExecResult.QUERY_OK);
+				result = new DbQueryStatus("Song title found", DbQueryExecResult.QUERY_OK);
 				result.setData(foundSong.getSongName()); // respond with song title
+				return result;
 			}
 			
 			else { // if song not found by id
 				
-				result = new DbQueryStatus("SongNotFoundError", DbQueryExecResult.QUERY_ERROR_NOT_FOUND);
+				result = new DbQueryStatus("Song title not found", DbQueryExecResult.QUERY_ERROR_NOT_FOUND);
+				return result;
 			}
 		}
 		
 		catch (JSONException e) {
 			
-			result = new DbQueryStatus("JSONError", DbQueryExecResult.QUERY_ERROR_GENERIC);
+			result = new DbQueryStatus("JSON Error", DbQueryExecResult.QUERY_ERROR_GENERIC);
+			return result;
 		}
-		
-		return result;
 	}
 
 	@Override
@@ -119,6 +135,12 @@ public class SongDalImpl implements SongDal {
 		
 		try {
 			
+			if (!ObjectId.isValid(songId)) {
+				
+				result = new DbQueryStatus("songId is not a valid id", DbQueryExecResult.QUERY_ERROR_GENERIC);
+				return result;
+			}
+			
 			Query findSong = new Query();
 			findSong.addCriteria(Criteria.where("_id").is(songId));
 			Song foundSong = this.db.findOne(findSong, Song.class);
@@ -126,22 +148,22 @@ public class SongDalImpl implements SongDal {
 			if (foundSong != null) { // if song found by id
 				
 				this.db.remove(foundSong);
-				
-				// TODO Delete from all locations
-				
-				result = new DbQueryStatus("OK", DbQueryExecResult.QUERY_OK);
+				result = new DbQueryStatus("Song deleted", DbQueryExecResult.QUERY_OK);
+				return result;
 			}
 			
 			else { // if song not found by id
-				result = new DbQueryStatus("SongNotFoundError", DbQueryExecResult.QUERY_ERROR_NOT_FOUND);
+				
+				result = new DbQueryStatus("Song not found", DbQueryExecResult.QUERY_ERROR_NOT_FOUND);
+				return result;
 			}
 		}
 		
 		catch (JSONException e) {
-			result = new DbQueryStatus("JSONError", DbQueryExecResult.QUERY_ERROR_GENERIC);
+			
+			result = new DbQueryStatus("JSON Error", DbQueryExecResult.QUERY_ERROR_GENERIC);
+			return result;
 		}
-		
-		return result;
 	}
 
 	@Override
@@ -151,6 +173,12 @@ public class SongDalImpl implements SongDal {
 		
 		try {
 			
+			if (!ObjectId.isValid(songId)) {
+				
+				result = new DbQueryStatus("songId is not a valid id", DbQueryExecResult.QUERY_ERROR_GENERIC);
+				return result;
+			}
+			
 			Query findSong = new Query();
 			findSong.addCriteria(Criteria.where("_id").is(songId));
 			Song foundSong = this.db.findOne(findSong, Song.class);
@@ -159,37 +187,43 @@ public class SongDalImpl implements SongDal {
 				
 				long numFav = foundSong.getSongAmountFavourites();
 				
-				// TODO Update to all locations
-				
-				if (shouldDecrement) { // if decrementing likes
+				if (shouldDecrement && numFav > 0) { // if decrementing likes
 					
-					if (numFav > 0) { // if song is liked
-						foundSong.setSongAmountFavourites(numFav - 1);
-					}
+					foundSong.setSongAmountFavourites(numFav - 1);
+					this.db.save(foundSong);
 					
-					else { // if song is not liked
-						result = new DbQueryStatus("SongNotLikedError", DbQueryExecResult.QUERY_ERROR_GENERIC);
-					}
+					result = new DbQueryStatus("Amount favourites decremented", DbQueryExecResult.QUERY_OK);
+					return result;
 				}
 				
 				else if (!shouldDecrement) { // if incrementing likes
+					
 					foundSong.setSongAmountFavourites(numFav + 1);
+					this.db.save(foundSong);
+					
+					result = new DbQueryStatus("Amount favourites incremented", DbQueryExecResult.QUERY_OK);
+					return result;
 				}
 				
-				this.db.save(foundSong);
-				
-				result = new DbQueryStatus("OK", DbQueryExecResult.QUERY_OK);
+				else {
+					
+					result = new DbQueryStatus("Amount favourites did not change", DbQueryExecResult.QUERY_ERROR_GENERIC);
+					return result;
+				}
 			}
 			
 			else { // if song not found by id
-				result = new DbQueryStatus("SongNotFoundError", DbQueryExecResult.QUERY_ERROR_NOT_FOUND);
+				
+				result = new DbQueryStatus("Song not found", DbQueryExecResult.QUERY_ERROR_NOT_FOUND);
+				return result;
 			}
 		}
 		
 		catch (JSONException e) {
-			result = new DbQueryStatus("JSONError", DbQueryExecResult.QUERY_ERROR_GENERIC);
+			
+			result = new DbQueryStatus("JSON Error", DbQueryExecResult.QUERY_ERROR_GENERIC);
+			return result;
 		}
-		
-		return result;
 	}
+	
 }

@@ -53,7 +53,7 @@ public class ProfileDriverImpl implements ProfileDriver {
 			if (profile.hasNext()) { // if Profile exists
 				
 				tx.failure();
-				result = new DbQueryStatus("Username already exists", DbQueryExecResult.QUERY_ERROR_GENERIC);
+				result = new DbQueryStatus("User already exists", DbQueryExecResult.QUERY_ERROR_GENERIC);
 			}
 			
 			else { // if Profile does not exist
@@ -73,7 +73,7 @@ public class ProfileDriverImpl implements ProfileDriver {
 					tx.run(createProfileAndPlaylist);
 					
 					tx.success();
-					result = new DbQueryStatus("OK",DbQueryExecResult.QUERY_OK);
+					result = new DbQueryStatus("Created user profile", DbQueryExecResult.QUERY_OK);
 				}
 			}
 			
@@ -124,7 +124,7 @@ public class ProfileDriverImpl implements ProfileDriver {
 						if (following.hasNext()) { // if User already follows Friend
 							
 							tx.failure();
-							result = new DbQueryStatus("User already follows Friend", DbQueryExecResult.QUERY_ERROR_GENERIC);
+							result = new DbQueryStatus("User already follows friend", DbQueryExecResult.QUERY_ERROR_GENERIC);
 						}
 						
 						else { // if User does not follow Friend
@@ -133,7 +133,7 @@ public class ProfileDriverImpl implements ProfileDriver {
 							tx.run(followFriend);
 							
 							tx.success();
-							result = new DbQueryStatus("OK", DbQueryExecResult.QUERY_OK);
+							result = new DbQueryStatus("User followed friend", DbQueryExecResult.QUERY_OK);
 						}
 					}
 				}
@@ -178,7 +178,7 @@ public class ProfileDriverImpl implements ProfileDriver {
 					if (!following.hasNext()) { // if User does not follow Friend
 						
 						tx.failure();
-						result = new DbQueryStatus("User does not follow Friend", DbQueryExecResult.QUERY_ERROR_GENERIC);
+						result = new DbQueryStatus("User does not follow friend", DbQueryExecResult.QUERY_ERROR_GENERIC);
 						
 					} 
 					
@@ -188,7 +188,7 @@ public class ProfileDriverImpl implements ProfileDriver {
 						tx.run(unfollowFriend);
 						tx.success();
 			
-						result = new DbQueryStatus("OK", DbQueryExecResult.QUERY_OK);
+						result = new DbQueryStatus("User unfollowed friend", DbQueryExecResult.QUERY_OK);
 					}
 				}
 			}
@@ -197,7 +197,6 @@ public class ProfileDriverImpl implements ProfileDriver {
 		return result;
 	}
 	
-
 	@Override
 	public DbQueryStatus getAllSongFriendsLike(String userName) {
 		
@@ -244,11 +243,12 @@ public class ProfileDriverImpl implements ProfileDriver {
 					allSongsFriendsLike.put(friendUserName, songsFriendLikes);
 				}
 				
-				result = new DbQueryStatus("OK", DbQueryExecResult.QUERY_OK);
+				result = new DbQueryStatus("Got all songs friends like", DbQueryExecResult.QUERY_OK);
 				result.setData(allSongsFriendsLike);
 			}
 
 			return result;
 		}
 	}
+	
 }

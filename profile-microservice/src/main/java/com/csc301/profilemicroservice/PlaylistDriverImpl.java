@@ -58,7 +58,7 @@ public class PlaylistDriverImpl implements PlaylistDriver {
 				if (songInPlaylist.hasNext()) { // if Song in User's Playlist
 					
 					tx.failure();
-					result = new DbQueryStatus("Song already liked by User", DbQueryExecResult.QUERY_ERROR_GENERIC);
+					result = new DbQueryStatus("Song already liked by user", DbQueryExecResult.QUERY_ERROR_GENERIC);
 				}
 				
 				else { // if song not in User's Playlist
@@ -93,7 +93,7 @@ public class PlaylistDriverImpl implements PlaylistDriver {
 						tx.success();
 					}
 				
-					result = new DbQueryStatus("OK", DbQueryExecResult.QUERY_OK);	
+					result = new DbQueryStatus("User liked song", DbQueryExecResult.QUERY_OK);	
 				}	
 			}	
 		}
@@ -119,7 +119,7 @@ public class PlaylistDriverImpl implements PlaylistDriver {
 			if (!playlist.hasNext()) { // if user playlist not found
 				
 				tx.failure();
-				result = new DbQueryStatus("Username does not exist", DbQueryExecResult.QUERY_ERROR_NOT_FOUND);
+				result = new DbQueryStatus("User does not exist", DbQueryExecResult.QUERY_ERROR_NOT_FOUND);
 			}
 			
 			else { // if user playlist found
@@ -135,7 +135,7 @@ public class PlaylistDriverImpl implements PlaylistDriver {
 				if (!songInPlaylist.hasNext()) { // if song not in user playlist
 					
 					tx.failure();
-					result = new DbQueryStatus("Song not in favourites", DbQueryExecResult.QUERY_ERROR_GENERIC);
+					result = new DbQueryStatus("Song not liked by user", DbQueryExecResult.QUERY_ERROR_GENERIC);
 				}
 				
 				else { // if song in user playlist
@@ -148,7 +148,7 @@ public class PlaylistDriverImpl implements PlaylistDriver {
 					tx.run(unlikeSong);
 					tx.success();
 					
-					result = new DbQueryStatus("OK", DbQueryExecResult.QUERY_OK);	
+					result = new DbQueryStatus("User unliked song", DbQueryExecResult.QUERY_OK);	
 				}	
 			}	
 		}
@@ -167,8 +167,9 @@ public class PlaylistDriverImpl implements PlaylistDriver {
 			tx.run(deleteSong);
 			tx.success();
 			
-			result = new DbQueryStatus("Ok",DbQueryExecResult.QUERY_OK);
+			result = new DbQueryStatus("Deleted song from Db",DbQueryExecResult.QUERY_OK);
 			return result;
 		}
 	}
+	
 }
