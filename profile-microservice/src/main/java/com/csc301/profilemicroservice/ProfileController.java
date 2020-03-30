@@ -249,6 +249,12 @@ public class ProfileController {
 				return response;
 			}
 			
+			if (dbQueryStatus.getMessage().equals("Song already liked by user")) {
+				response = Utils.setResponseStatus(response, dbQueryStatus.getdbQueryExecResult(), dbQueryStatus.getData());
+				response.put("message", dbQueryStatus.getMessage());
+				response.put("path", String.format("PUT %s", Utils.getUrl(request)));
+				return response;
+			}
 			// 3 : Update Song in MongoDb
 			HttpUrl.Builder urlBuilderUpdate = HttpUrl.parse("http://localhost:3001" + "/updateSongFavouritesCount").newBuilder();
 			urlBuilderUpdate.addPathSegment(songId);
