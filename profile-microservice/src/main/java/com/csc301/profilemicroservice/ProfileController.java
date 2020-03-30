@@ -164,7 +164,7 @@ public class ProfileController {
 			}
 			
 			
-			dbQueryStatus = new DbQueryStatus("OK", DbQueryExecResult.QUERY_OK);
+			dbQueryStatus = new DbQueryStatus("Got all songTitles friends like", DbQueryExecResult.QUERY_OK);
 			dbQueryStatus.setData(allSongTitleFriendLike.toMap());
 			
 			response = Utils.setResponseStatus(response, dbQueryStatus.getdbQueryExecResult(), dbQueryStatus.getData());
