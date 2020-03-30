@@ -57,6 +57,7 @@ public class PlaylistDriverImpl implements PlaylistDriver {
 				
 				if (songInPlaylist.hasNext()) { // if Song in User's Playlist
 					
+					//tx.failure();
 					result = new DbQueryStatus("Song already liked by user", DbQueryExecResult.QUERY_OK);
 					tx.success();
 				}
@@ -134,8 +135,8 @@ public class PlaylistDriverImpl implements PlaylistDriver {
 				
 				if (!songInPlaylist.hasNext()) { // if song not in user playlist
 					
-					tx.success();
-					result = new DbQueryStatus("Song not liked by user", DbQueryExecResult.QUERY_OK);
+					tx.failure();
+					result = new DbQueryStatus("Song not liked by user", DbQueryExecResult.QUERY_ERROR_GENERIC);
 				}
 				
 				else { // if song in user playlist
