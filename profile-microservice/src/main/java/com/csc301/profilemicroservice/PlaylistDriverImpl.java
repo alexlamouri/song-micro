@@ -164,12 +164,25 @@ public class PlaylistDriverImpl implements PlaylistDriver {
 		
 		try (Transaction tx = driver.session().beginTransaction()) {
 			
-			String deleteSong = String.format("MATCH (nPlaylist:playlist)-[r:includes]->(nSong:song {songId: \"%s\"}) WHERE nPlaylist.plName =~ '.*-favourites' DELETE r,nSong",songId);
-			tx.run(deleteSong);
-			tx.success();
+			String findSong = String.format("MATCH (nSong:song {songId: \"%s\"}) RETURN nSong", songId);
+			StatementResult song = tx.run(findSong);
 			
-			result = new DbQueryStatus("Deleted song from Db",DbQueryExecResult.QUERY_OK);
-			return result;
+			if (song.hasNext()) { // if song in Db
+				
+				String deleteSong = String.format("MATCH (nPlaylist:playlist)-[r:includes]->(nSong:song {songId: \"%s\"}) WHERE nPlaylist.plName =~ '.*-favourites' DELETE r,nSong",songId);
+				tx.run(deleteSong);
+				
+				tx.success();
+				result = new DbQueryStatus("Deleted song from Db",DbQueryExecResult.QUERY_OK);
+				return result;
+			}
+			
+			else { // if song not in Db
+				
+				tx.failure();
+				result = new DbQueryStatus("Song not in Db",DbQueryExecResult.QUERY_ERROR_NOT_FOUND);
+				return result;
+			}
 		}
 	}
 	

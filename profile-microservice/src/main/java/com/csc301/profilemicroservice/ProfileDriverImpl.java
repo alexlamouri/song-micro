@@ -243,7 +243,7 @@ public class ProfileDriverImpl implements ProfileDriver {
 					allSongsFriendsLike.put(friendUserName, songsFriendLikes);
 				}
 				
-				result = new DbQueryStatus("Got all songs friends like", DbQueryExecResult.QUERY_OK);
+				result = new DbQueryStatus("Got all songIds friends like", DbQueryExecResult.QUERY_OK);
 				result.setData(allSongsFriendsLike);
 			}
 
