@@ -123,8 +123,8 @@ public class ProfileDriverImpl implements ProfileDriver {
 						
 						if (following.hasNext()) { // if User already follows Friend
 							
-							tx.failure();
-							result = new DbQueryStatus("User already follows friend", DbQueryExecResult.QUERY_ERROR_GENERIC);
+							result = new DbQueryStatus("User already follows friend", DbQueryExecResult.QUERY_OK);
+							tx.success();
 						}
 						
 						else { // if User does not follow Friend
